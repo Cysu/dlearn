@@ -88,3 +88,96 @@ class FullConnLayer(Block):
 
         """
         return self._W.norm(l)
+
+
+class ConvPoolLayer(Block):
+
+    """Construct a convolutional and max-pooling layer.
+
+    The output of the convolutional and max-pooling layer is
+
+    .. math::
+        y = \sigma(\phi(\sum_{i=1}^nW_i*x+b_i))
+
+    where :math:`x` is an input sample vector, :math:`y` is the output vector,
+    :math:`W_i` is the filter matrix, :math:`b_i` is the bias vector,
+    :math:`\phi` is the max-pooling function and :math:`\sigma` is the active
+    function.
+
+    Parameters
+    ----------
+    input : theano.tensor.matrix or theano.tensor.tensor4
+        The input symbol of the fully connected layer. Along the first dimension
+        are image samples.
+    filter_shape : list/tuple of int
+        The shape of the filter matrix. (n_filters, n_channels, n_rows, n_cols).
+    pool_shape : list/tuple of int
+        The shape of the pooling region. (n_rows, n_cols).
+    image_shape : None or list/tuple of int, optional
+        If None, then the input should be ``theano.tensor.tensor4``, otherwise
+        each input vector will be reshaped to image_shape. (n_channels, n_rows,
+        n_cols). Default is None.
+    active_func : None, theano.Op or function, optional
+        If None, then no active function will be applied to the output,
+        otherwise the specified will be applied. Default is None.
+
+    """
+
+    def __init__(self, filter_shape, pool_shape,
+                 image_shape=None, active_func=None):
+        super(ConvPoolLayer, self).__init__(input)
+
+        self._filter_shape = filter_shape
+        self._pool_shape = pool_shape
+        self._image_shape = image_shape
+        self._active_func = active_func
+
+        fan_in = np.prod(filter_shape[1:])
+        fan_out = filter_shape[0] * \
+            np.prod(filter_shape[2:]) / np.prod(pool_shape)
+
+        W_bound = np.sqrt(6.0 / (fan_in + fan_out))
+
+        if active_func == actfuncs.sigmoid:
+            W_bound *= 4
+
+        init_W = np.asarray(nprng.uniform(low=-W_bound, high=W_bound,
+                                          size=filter_shape),
+                            dtype=theano.config.floatX)
+
+        self._W = theano.shared(value=init_W, borrow=True)
+
+        init_b = np.zeros((filter_shape[0],), dtype=theano.config.floatX)
+
+        self._b = theano.shared(value=init_b, borrow=True)
+
+        self._params = [self._W, self._b]
+
+        x = self._input if self._image_shape is None else \
+            self._input.reshape((self._input.shape[0],) + self._image_shape)
+
+        z = T.nnet.conv.conv2d(input=x, filters=self._W,
+                               filter_shape=self._filter_shape)
+
+        z = T.signal.downsample.max_pool_2d(input=z, ds=self._pool_shape,
+                                            ignore_border=True)
+
+        z = z + self._b.dimshuffle('x', 0, 'x', 'x')
+
+        self._output = z if self._active_func is None else self._active_func(z)
+
+    def get_norm(self, l):
+        """Return the norm of the filter matrix.
+
+        Parameters
+        ----------
+        l : int
+            The L?-norm.
+
+        Returns
+        -------
+        out : theano.tensor.scalar
+            The norm of the filter matrix.
+
+        """
+        return self._W.norm(l)
