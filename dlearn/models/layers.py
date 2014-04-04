@@ -9,7 +9,7 @@ from ..utils.math import nprng
 
 class FullConnLayer(Block):
 
-    """Construct a fully connected layer.
+    r"""Construct a fully connected layer.
 
     The output of the fully connected layer is
     

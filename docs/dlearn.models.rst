@@ -20,6 +20,14 @@ dlearn.models.layers module
     :undoc-members:
     :show-inheritance:
 
+dlearn.models.nnet module
+-------------------------
+
+.. automodule:: dlearn.models.nnet
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------

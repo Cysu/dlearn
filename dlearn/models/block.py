@@ -19,6 +19,8 @@ class Block(object):
     """
 
     def __init__(self, input):
+        super(Block, self).__init__()
+
         self._params = []
         self._input = input
         self._output = input
@@ -27,22 +29,10 @@ class Block(object):
     def parameters(self):
         return self._params
 
-    @parameters.setter
-    def parameters(self, value):
-        self._params = value
-
     @property
     def input(self):
         return self._input
 
-    @input.setter
-    def input(self, value):
-        self._input = value
-
     @property
     def output(self):
         return self._output
-
-    @output.setter
-    def output(self, value):
-        self._output = value
