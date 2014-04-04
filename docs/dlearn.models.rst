@@ -12,10 +12,10 @@ dlearn.models.block module
     :undoc-members:
     :show-inheritance:
 
-dlearn.models.layers module
----------------------------
+dlearn.models.layer module
+--------------------------
 
-.. automodule:: dlearn.models.layers
+.. automodule:: dlearn.models.layer
     :members:
     :undoc-members:
     :show-inheritance:

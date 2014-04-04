@@ -12,6 +12,14 @@ dlearn.utils.actfuncs module
     :undoc-members:
     :show-inheritance:
 
+dlearn.utils.costfuncs module
+-----------------------------
+
+.. automodule:: dlearn.utils.costfuncs
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 dlearn.utils.math module
 ------------------------
 
