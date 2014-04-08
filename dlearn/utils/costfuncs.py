@@ -75,3 +75,23 @@ def neglog(output, target):
 
     """
     return -T.mean(T.log(output)[T.arange(target.shape[0]), target])
+
+
+def miscls_rate(output, target):
+    r"""Return the mean misclassification rate.
+
+    Parameters
+    ----------
+    output : theano.tensor.matrix
+        The output symbol of the model. Each row is a sample vector.
+    target : theano.tensor.ivector
+        The target symbol of the model. Each row is a ground-truth label.
+
+    Returns
+    -------
+    out : theano.tensor.scalar
+        The mean misclassification rate of all the samples.
+
+    """
+    pred = T.argmax(output, axis=1)
+    return T.neq(pred, target).mean()

@@ -13,16 +13,17 @@ class NeuralNet(Block):
     ----------
     blocks : list of Block
         The blocks of the neural network.
+    target : theano.tensor or list of theano.tensor
+        The target symbol(s) of the `cost` and `error`.
     cost : theano.tesnor.scalar
-        The cost to be used for training. Default is None.
+        The cost to be used for training.
     error : theano.tensor.scalar
-        The error to be used for testing. Default is None.
+        The error to be used for testing.
     inc_updates : list of update tensors
         The incremental updates. :math:`inc\gets momentum\times inc - lr\times
-        gradient`. Default is empty list.
+        gradient`.
     param_updates : list of update tensors
-        Then parameter updates. :math:`param\gets param+inc`. Default is empty
-        list.
+        Then parameter updates. :math:`param\gets param+inc`.
 
     Parameters
     ----------
@@ -40,15 +41,24 @@ class NeuralNet(Block):
 
         self._blocks = blocks
 
-        self._params = reduce(lambda x, y: x | y,
-                              [set(b.parameters) for b in self._blocks])
+        self._params = list(reduce(lambda x, y: x | y,
+                                   [set(b.parameters) for b in self._blocks]))
 
         self._output = output
 
         self._cost = None
         self._error = None
+        self._target = None
         self._inc_updates = []
         self._param_updates = []
+
+    @property
+    def target(self):
+        return self._target
+
+    @target.setter
+    def target(self, value):
+        self._target = value
 
     @property
     def blocks(self):

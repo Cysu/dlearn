@@ -6,7 +6,9 @@ Subpackages
 
 .. toctree::
 
+    dlearn.data
     dlearn.models
+    dlearn.optimization
     dlearn.utils
 
 Module contents

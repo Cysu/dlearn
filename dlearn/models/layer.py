@@ -29,20 +29,20 @@ class FullConnLayer(Block):
         The size of each input sample.
     output_size : int
         The size of each output sample.
-    W : None or theano.matrix(shared)
-        If None, the weight matrix will be intialized randomly, otherwise it
-        will be set to the specified value. Default is None.
-    b : None or theano.vector(shared)
-        If None, the bias vector will be initialized as zero, otherwise it will
-        be set to the specified value. Default is None.
     active_func : None, theano.Op or function, optional
         If None, then no active function will be applied to the output,
         otherwise the specified will be applied. Default is None.
+    W : None or theano.matrix(shared), optional
+        If None, the weight matrix will be intialized randomly, otherwise it
+        will be set to the specified value. Default is None.
+    b : None or theano.vector(shared), optional
+        If None, the bias vector will be initialized as zero, otherwise it will
+        be set to the specified value. Default is None.
 
     """
 
     def __init__(self, input, input_size, output_size,
-                 W=None, b=None, active_func=None):
+                 active_func=None, W=None, b=None):
         super(FullConnLayer, self).__init__(input)
 
         self._active_func = active_func
@@ -123,10 +123,11 @@ class ConvPoolLayer(Block):
 
     """
 
-    def __init__(self, filter_shape, pool_shape,
+    def __init__(self, input, filter_shape, pool_shape,
                  image_shape=None, active_func=None):
         super(ConvPoolLayer, self).__init__(input)
 
+        self._input = input
         self._filter_shape = filter_shape
         self._pool_shape = pool_shape
         self._image_shape = image_shape
