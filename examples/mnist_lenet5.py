@@ -1,6 +1,10 @@
 import os
+import sys
 import cPickle
 import theano.tensor as T
+
+if not '..' in sys.path:
+    sys.path.insert(0, '..')
 
 from dlearn.data.dataset import Dataset
 from dlearn.models.layer import FullConnLayer, ConvPoolLayer
@@ -50,8 +54,9 @@ def train_model(dataset):
     model.cost = costfuncs.neglog(layers[3].output, Y)
     model.error = costfuncs.miscls_rate(layers[3].output, Y)
 
-    sgd.train(model, dataset, lr=0.1, batch_size=500,
-              n_epochs=200, lr_decr=1.0)
+    sgd.train(model, dataset, lr=0.1, momentum=0.9,
+              batch_size=500, n_epochs=200,
+              lr_decr=1.0)
 
     return model
 
