@@ -61,6 +61,13 @@ def train_model(dataset):
 
     return model
 
+
+def save_model(model):
+    with open('model.pkl', 'wb') as f:
+        cPickle.dump(model, f, cPickle.HIGHEST_PROTOCOL)
+
+
 if __name__ == '__main__':
     dataset = load_data()
     model = train_model(dataset)
+    save_model(model)
