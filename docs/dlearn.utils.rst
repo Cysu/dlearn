@@ -20,6 +20,14 @@ dlearn.utils.costfuncs module
     :undoc-members:
     :show-inheritance:
 
+dlearn.utils.imgproc module
+---------------------------
+
+.. automodule:: dlearn.utils.imgproc
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 dlearn.utils.math module
 ------------------------
 

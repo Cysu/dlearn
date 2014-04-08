@@ -17,7 +17,9 @@ import os
 import mock
 
 # Mock some third-party modules
-mock_modules = ['numpy', 'theano', 'theano.tensor']
+mock_modules = ['numpy', 'theano', 'theano.tensor',
+                'skimage', 'skimage.transform', 'skimage.color',
+                'sklearn', 'sklearn.preprocessing']
 
 for m in mock_modules:
     sys.modules[m] = mock.Mock()
@@ -252,9 +254,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    ('index', 'dlearn', u'dlearn Documentation',
-     u'Tong Xiao', 'dlearn', 'One line description of project.',
-     'Miscellaneous'),
+    ('index', 'dlearn', u'dlearn Documentation', u'Tong Xiao',
+     'dlearn', 'One line description of project.', 'Miscellaneous')
 ]
 
 # Documents to append as an appendix to all manuals.

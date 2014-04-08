@@ -104,7 +104,7 @@ def binerr(output, target):
     \{0,1\}^n`. Then the binary prediction error rate is
 
     .. math::
-        c = sum_{i=1}^n \delta(round(o_i) = t_i)
+        c = \sum_{i=1}^n \delta(round(o_i) = t_i)
 
     Parameters
     ----------
