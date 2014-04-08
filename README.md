@@ -9,6 +9,7 @@ Introduction
 TODO
 ----
 
++ Layer's output shape inference
 + Pre-processing submodule
 + Auto-Memory Mechanism (access data in GPU-CPU-HD levels transparently)
 + API for different datasets

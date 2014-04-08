@@ -95,3 +95,29 @@ def miscls_rate(output, target):
     """
     pred = T.argmax(output, axis=1)
     return T.neq(pred, target).mean()
+
+
+def binerr(output, target):
+    r"""Return the mean binary prediction error rate.
+
+    The output vector :math:`o\in [0,1]^n`, and target vector :math:`t\in
+    \{0,1\}^n`. Then the binary prediction error rate is
+
+    .. math::
+        c = sum_{i=1}^n \delta(round(o_i) = t_i)
+
+    Parameters
+    ----------
+    output : theano.tensor.matrix
+        The output symbol of the model. Each row is a sample vector.
+    target : theano.tensor.matrix
+        The target symbol of the model. Each row is a ground-truth vector.
+
+    Returns
+    -------
+    out : theano.tensor.scalar
+        The mean binary prediction error rate of all the samples.
+
+    """
+    pred = T.round(output)
+    return T.neq(pred, target).sum(axis=1).mean()

@@ -3,8 +3,9 @@ import sys
 import cPickle
 import theano.tensor as T
 
-if not '..' in sys.path:
-    sys.path.insert(0, '..')
+homepath = '..'
+if not homepath in sys.path:
+    sys.path.insert(0, homepath)
 
 from dlearn.data.dataset import Dataset
 from dlearn.models.layer import FullConnLayer, ConvPoolLayer
