@@ -5,11 +5,11 @@ class Block(object):
     Attributes
     ----------
     parameters : list of theano.tensor
-        The block parameters.
+        The block parameters. *Read-only*.
     input : theano.tensor or list of theano.tensor
-        The input symbol(s) of the block.
+        The input symbol(s) of the block. *Read-only*.
     output : theano.tensor or list of theano.tensor
-        The output symbol(s) of the block.
+        The output symbol(s) of the block. *Read-only*.
 
     Parameters
     ----------

@@ -7,10 +7,9 @@ homepath = os.path.join('..', '..')
 if not homepath in sys.path:
     sys.path.insert(0, homepath)
 
-import conf
-
 
 def load_rawdata():
+    import conf
     from scipy.io import loadmat
 
     rawdata = []
@@ -37,7 +36,7 @@ def create_dataset(rawdata):
         img = imgproc.resize(img, (80, 30))
         img = imgproc.subtract_luminance(img)
         img = np.rollaxis(img, 2)
-        return img.ravel()
+        return img
 
     m = len(rawdata)
     X = [0] * m
@@ -63,6 +62,7 @@ def save_dataset(dataset):
 
     with open('data.pkl', 'wb') as f:
         cPickle.dump(dataset, f, cPickle.HIGHEST_PROTOCOL)
+
 
 if __name__ == '__main__':
     rawdata = load_rawdata()

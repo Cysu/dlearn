@@ -20,15 +20,26 @@ class FullConnLayer(Block):
     :math:`W` is the weight matrix, :math:`b` is the bias vector and
     :math:`\sigma` is the active function.
 
+    Attributes
+    ----------
+    input_shape : int or list/tuple of int
+        The shape of each input sample. If the type of `input_shape` is int,
+        then each input sample is a vector. *Read-only*.
+    output_shape : int or list/tuple of int
+        The shape of each output sample. If the type of `output_shape` is int,
+        then each output sample is a vector. *Read-only*.
+
     Parameters
     ----------
     input : theano.tensor.matrix
         The input symbol of the fully connected layer. Each row is a sample
         vector.
-    input_size : int
-        The size of each input sample.
-    output_size : int
-        The size of each output sample.
+    input_shape : int or list/tuple of int
+        The shape of each input sample. If the type of `input_shape` is int,
+        then each input sample is a vector.
+    output_shape : int or list/tuple of int
+        The shape of each output sample. If the type of `output_shape` is int,
+        then each output sample is a vector.
     active_func : None, theano.Op or function, optional
         If None, then no active function will be applied to the output,
         otherwise the specified will be applied. Default is None.
@@ -41,28 +52,43 @@ class FullConnLayer(Block):
 
     """
 
-    def __init__(self, input, input_size, output_size,
+    def __init__(self, input, input_shape, output_shape,
                  active_func=None, W=None, b=None):
         super(FullConnLayer, self).__init__(input)
+
+        if isinstance(input_shape, int):
+            self._input_shape = input_shape
+        elif isinstance(input_shape, tuple) or isinstance(input_shape, list):
+            self._input_shape = np.prod(input_shape)
+        else:
+            raise ValueError("input_shape type error")
+
+        if isinstance(output_shape, int):
+            self._output_shape = output_shape
+        elif isinstance(output_shape, tuple) or isinstance(output_shape, list):
+            self._output_shape = np.prod(output_shape)
+        else:
+            raise ValueError("output_shape type error")
 
         self._active_func = active_func
 
         if W is None:
-            W_bound = np.sqrt(6.0 / (input_size + output_size))
+            W_bound = np.sqrt(6.0 / (self._input_shape + self._output_shape))
 
             if active_func == actfuncs.sigmoid:
                 W_bound *= 4
 
-            init_W = np.asarray(nprng.uniform(low=-W_bound, high=W_bound,
-                                              size=(input_size, output_size)),
-                                dtype=theano.config.floatX)
+            init_W = np.asarray(
+                nprng.uniform(low=-W_bound, high=W_bound,
+                              size=(self._input_shape, self._output_shape)),
+                dtype=theano.config.floatX)
 
             self._W = theano.shared(value=init_W, borrow=True)
         else:
             self._W = W
 
         if b is None:
-            init_b = np.zeros(output_size, dtype=theano.config.floatX)
+            init_b = np.zeros(self._output_shape, dtype=theano.config.floatX)
 
             self._b = theano.shared(value=init_b, borrow=True)
         else:
@@ -72,6 +98,14 @@ class FullConnLayer(Block):
 
         z = T.dot(self._input, self._W) + self._b
         self._output = z if self._active_func is None else self._active_func(z)
+
+    @property
+    def input_shape(self):
+        return self._input_shape
+
+    @property
+    def output_shape(self):
+        return self._output_shape
 
     def get_norm(self, l):
         """Return the norm of the weight matrix.
@@ -104,34 +138,53 @@ class ConvPoolLayer(Block):
     :math:`\phi` is the max-pooling function and :math:`\sigma` is the active
     function.
 
+    Attributes
+    ----------
+    input_shape : list/tuple of int
+        The shape of each input sample. (n_channels, n_rows, n_cols). *Read-
+        only*.
+    output_shape : int or list/tuple of int
+        The shape of each output sample. If the type of `output_shape` is int,
+        then each output sample is a vector. *Read-only*.
+
     Parameters
     ----------
-    input : theano.tensor.matrix or theano.tensor.tensor4
+    input : theano.tensor.tensor4
         The input symbol of the fully connected layer. Along the first dimension
         are image samples.
+    input_shape : list/tuple of int
+        The shape of each input sample. (n_channels, n_rows, n_cols).
     filter_shape : list/tuple of int
-        The shape of the filter matrix. (n_filters, n_channels, n_rows, n_cols).
-    pool_shape : list/tuple of int
-        The shape of the pooling region. (n_rows, n_cols).
-    image_shape : None or list/tuple of int, optional
-        If None, then the input should be ``theano.tensor.tensor4``, otherwise
-        each input vector will be reshaped to image_shape. (n_channels, n_rows,
-        n_cols). Default is None.
+        The shape of the filters. (n_filters, n_channels, n_rows, n_cols).
+    pool_shape : None or list/tuple of int, optional
+        If None, then no max-pooling will be performed, otherwise the shape of
+        the max-pooling region should be (n_rows, n_cols). Default if None.
     active_func : None, theano.Op or function, optional
         If None, then no active function will be applied to the output,
         otherwise the specified will be applied. Default is None.
+    flatten : bool, optional
+        If False, then output will not be flattened, otherwise the output of
+        each sample will be flattened into a vector. Default is False.
 
     """
 
-    def __init__(self, input, filter_shape, pool_shape,
-                 image_shape=None, active_func=None):
+    def __init__(self, input, input_shape, filter_shape,
+                 pool_shape=None, active_func=None, flatten=False):
         super(ConvPoolLayer, self).__init__(input)
 
         self._input = input
+        self._input_shape = input_shape
         self._filter_shape = filter_shape
         self._pool_shape = pool_shape
-        self._image_shape = image_shape
         self._active_func = active_func
+        self._flatten = flatten
+        self._output_shape = (
+            filter_shape[0],
+            (input_shape[-2] - filter_shape[-2] + 1) // pool_shape[0],
+            (input_shape[-1] - filter_shape[-1] + 1) // pool_shape[1]
+        )
+        if flatten:
+            self._output_shape = np.prod(self._output_shape)
 
         fan_in = np.prod(filter_shape[1:])
         fan_out = filter_shape[0] * \
@@ -154,18 +207,30 @@ class ConvPoolLayer(Block):
 
         self._params = [self._W, self._b]
 
-        x = self._input if self._image_shape is None else \
-            self._input.reshape((self._input.shape[0],) + self._image_shape)
-
-        z = T.nnet.conv.conv2d(input=x, filters=self._W,
+        z = T.nnet.conv.conv2d(input=self._input, filters=self._W,
                                filter_shape=self._filter_shape)
 
-        z = T.signal.downsample.max_pool_2d(input=z, ds=self._pool_shape,
-                                            ignore_border=True)
+        if self._pool_shape is not None:
+            z = T.signal.downsample.max_pool_2d(input=z, ds=self._pool_shape,
+                                                ignore_border=True)
 
         z = z + self._b.dimshuffle('x', 0, 'x', 'x')
 
-        self._output = z if self._active_func is None else self._active_func(z)
+        if self._active_func is not None:
+            z = self._active_func(z)
+
+        if self._flatten:
+            z = z.flatten(2)
+
+        self._output = z
+
+    @property
+    def input_shape(self):
+        return self._input_shape
+
+    @property
+    def output_shape(self):
+        return self._output_shape
 
     def get_norm(self, l):
         """Return the norm of the filter matrix.
