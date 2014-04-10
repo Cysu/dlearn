@@ -85,10 +85,11 @@ def train_model(dataset):
 
     model = NeuralNet(layers, X, layers[-1].output)
     model.target = Y
-    model.cost = costfuncs.binxent(layers[-1].output, Y)
+    model.cost = costfuncs.binxent(layers[-1].output, Y) + \
+        1e-3 * model.get_norm(2)
     model.error = costfuncs.binerr(layers[-1].output, Y)
 
-    sgd.train(model, dataset, lr=1e-3, momentum=0.9,
+    sgd.train(model, dataset, lr=2e-3, momentum=0.9,
               batch_size=500, n_epochs=200,
               lr_decr=1.0)
 

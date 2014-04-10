@@ -10,7 +10,7 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
           batch_size=100, n_epochs=100,
           improvement=1 - 1e-3, patience_incr=2.0, lr_decr=0.95,
           never_stop=False):
-    r"""Train the model with batched Stochastic Gradient Descent(SGD).
+    r"""Train the model with mini-batch Stochastic Gradient Descent(SGD).
 
     Parameters
     ----------
@@ -23,7 +23,7 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
     momentum : float or double, optional
         The coefficient of momentum term. Default is 0.9.
     batch_size : int, optional
-        The number of samples in each batch. Default is 100.
+        The number of samples in each mini-batch. Default is 100.
     n_epochs : int, optional
         The number of training epochs. Default is 100.
     improvement, patience_incr, lr_decr : float or double, optional
@@ -43,11 +43,11 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
     n_valid = dataset.valid_x.get_value(borrow=True).shape[0]
     n_test = dataset.test_x.get_value(borrow=True).shape[0]
 
-    n_train_batches = (n_train - 1) // batch_size + 1
-    n_valid_batches = (n_valid - 1) // batch_size + 1
-    n_test_batches = (n_test - 1) // batch_size + 1
+    n_train_batches = n_train // batch_size
+    n_valid_batches = n_valid // batch_size
+    n_test_batches = n_test // batch_size
 
-    i = T.iscalar()  # batch index
+    i = T.iscalar()  # mini-batch index
     alpha = T.scalar()  # learning rate
     dummy = T.scalar()  # for parameter updates
 
