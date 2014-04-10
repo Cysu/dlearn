@@ -72,6 +72,7 @@ class FullConnLayer(Block):
 
         self._active_func = active_func
 
+        # Initialize parameters
         if W is None:
             W_bound = np.sqrt(6.0 / (self._input_shape + self._output_shape))
 
@@ -96,6 +97,7 @@ class FullConnLayer(Block):
 
         self._params = [self._W, self._b]
 
+        # Compute output
         z = T.dot(self._input, self._W) + self._b
         self._output = z if self._active_func is None else self._active_func(z)
 
@@ -175,20 +177,25 @@ class ConvPoolLayer(Block):
         self._input = input
         self._input_shape = input_shape
         self._filter_shape = filter_shape
-        self._pool_shape = pool_shape
+        self._pool_shape = pool_shape if pool_shape is not None else (1, 1)
         self._active_func = active_func
         self._flatten = flatten
+
+        # Compute output shape
+        n_rows = (self._input_shape[-2] - self._filter_shape[-2] + 1)
+        n_cols = (self._input_shape[-1] - self._filter_shape[-1] + 1)
         self._output_shape = (
-            filter_shape[0],
-            (input_shape[-2] - filter_shape[-2] + 1) // pool_shape[0],
-            (input_shape[-1] - filter_shape[-1] + 1) // pool_shape[1]
+            self._filter_shape[0],
+            n_rows // self._pool_shape[0],
+            n_cols // self._pool_shape[1]
         )
         if flatten:
             self._output_shape = np.prod(self._output_shape)
 
-        fan_in = np.prod(filter_shape[1:])
-        fan_out = filter_shape[0] * \
-            np.prod(filter_shape[2:]) / np.prod(pool_shape)
+        # Initialize parameters
+        fan_in = np.prod(self._filter_shape[1:])
+        fan_out = self._filter_shape[0] * \
+            np.prod(self._filter_shape[2:]) / np.prod(self._pool_shape)
 
         W_bound = np.sqrt(6.0 / (fan_in + fan_out))
 
@@ -196,7 +203,7 @@ class ConvPoolLayer(Block):
             W_bound *= 4
 
         init_W = np.asarray(nprng.uniform(low=-W_bound, high=W_bound,
-                                          size=filter_shape),
+                                          size=self._filter_shape),
                             dtype=theano.config.floatX)
 
         self._W = theano.shared(value=init_W, borrow=True)
@@ -207,10 +214,11 @@ class ConvPoolLayer(Block):
 
         self._params = [self._W, self._b]
 
+        # Compute output
         z = T.nnet.conv.conv2d(input=self._input, filters=self._W,
                                filter_shape=self._filter_shape)
 
-        if self._pool_shape is not None:
+        if self._pool_shape != (1, 1):
             z = T.signal.downsample.max_pool_2d(input=z, ds=self._pool_shape,
                                                 ignore_border=True)
 
