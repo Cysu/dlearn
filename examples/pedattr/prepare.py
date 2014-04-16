@@ -9,7 +9,7 @@ if not homepath in sys.path:
 
 
 def load_rawdata():
-    import conf
+    import conf_apis as conf
     from scipy.io import loadmat
 
     rawdata = []
@@ -33,7 +33,7 @@ def create_dataset(rawdata):
     from dlearn.utils import imgproc
 
     def imgprep(img):
-        img = imgproc.resize(img, (80, 30))
+        # img = imgproc.resize(img, (80, 30))
         img = imgproc.subtract_luminance(img)
         img = np.rollaxis(img, 2)
         return img

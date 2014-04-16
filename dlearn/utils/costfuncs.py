@@ -121,3 +121,36 @@ def binerr(output, target):
     """
     pred = T.round(output)
     return T.neq(pred, target).sum(axis=1).mean()
+
+
+def KL(target, output):
+    r"""Return the mean of summation of Kullback-Leibler divergence.
+
+    **Note that the parameters order is different from other cost functions due
+    to the conventional definition of the KL-divergence.** Denote the target
+    vector and output vector by :math:`t\in [0,1]^n` and :math:`o\in [0,1]^n`
+    respectively, the KL-divergence of each element is defined to be
+
+    .. math::
+        KL(t_i||o_i) = t_i\log\frac{t_i}{o_i} + (1-t_i)\log\frac{1-t_i}{1-o_i}
+
+    And the summation over all the elements is
+
+    .. math::
+        c = \sum_{i=1}^n KL(t_i||o_i)
+
+    Parameters
+    ----------
+    target : theano.tensor.matrix
+        The target symbol of the model. Each row is a ground-truth vector.
+    output : theano.tensor.matrix
+        The output symbol of the model. Each row is a sample vector.
+
+    Returns
+    -------
+    out : theano.tensor.scalar
+        The mean of summation of KL-divergence over all the elements.
+    """
+    kl = target * T.log(target / output) + \
+        (1.0 - target) * T.log((1.0 - target) / (1.0 - output))
+    return kl.sum(axis=1).mean()

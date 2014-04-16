@@ -9,7 +9,8 @@ Introduction
 TODO
 ----
 
-+ Pre-processing submodule
++ Local normalization layer
++ Locally connected layer with unshared weights
 + Auto-Memory Mechanism (access data in GPU-CPU-HD levels transparently)
 + API for different datasets
 + Documentations

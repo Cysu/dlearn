@@ -1,0 +1,157 @@
+datasets = [
+    'APiS'
+]
+
+names = [
+    'TshirtNo',
+    'TshirtYes',
+    'TshirtAmbi',
+    'BackpackNo',
+    'BackpackYes',
+    'BackpackAmbi',
+    'GenderFemale',
+    'GenderMale',
+    'GenderAmbi',
+    'CarryingNo',
+    'CarryingYes',
+    'CarryingAmbi',
+    'LongHairNo',
+    'LongHairYes',
+    'LongHairAmbi',
+    'LongJeansNo',
+    'LongJeansYes',
+    'LongJeansAmbi',
+    'LongPantsNo',
+    'LongPantsYes',
+    'LongPantsAmbi',
+    'MidShortPantsNo',
+    'MidShortPantsYes',
+    'MidShortPantsAmbi',
+    'ShirtNo',
+    'ShirtYes',
+    'ShirtAmbi',
+    'ShoulderBagNo',
+    'ShoulderBagYes',
+    'ShoulderBagAmbi',
+    'SkirtNo',
+    'SkirtYes',
+    'SkirtAmbi',
+    'UpperBodyBlack',
+    'UpperBodyWhite',
+    'UpperBodyGray',
+    'UpperBodyRed',
+    'UpperBodyGreen',
+    'UpperBodyBlue',
+    'UpperBodyUndefined',
+    'UpperBodyAmbi',
+    'UpperBodyOccluded',
+    'LowerBodyBlack',
+    'LowerBodyWhite',
+    'LowerBodyKhaki',
+    'LowerBodyGray',
+    'LowerBodyBlue',
+    'LowerBodyUndefined',
+    'LowerBodyAmbi',
+    'LowerBodyOccluded'
+]
+
+unival = [
+    [
+        'TshirtNo',
+        'TshirtYes',
+        'TshirtAmbi'
+    ],
+    [
+        'BackpackNo',
+        'BackpackYes',
+        'BackpackAmbi'
+    ],
+    [
+        'GenderFemale',
+        'GenderMale',
+        'GenderAmbi'
+    ],
+    [
+        'CarryingNo',
+        'CarryingYes',
+        'CarryingAmbi'
+    ],
+    [
+        'LongHairNo',
+        'LongHairYes',
+        'LongHairAmbi'
+    ],
+    [
+        'LongJeansNo',
+        'LongJeansYes',
+        'LongJeansAmbi'
+    ],
+    [
+        'LongPantsNo',
+        'LongPantsYes',
+        'LongPantsAmbi'
+    ],
+    [
+        'MidShortPantsNo',
+        'MidShortPantsYes',
+        'MidShortPantsAmbi'
+    ],
+    [
+        'ShirtNo',
+        'ShirtYes',
+        'ShirtAmbi'
+    ],
+    [
+        'ShoulderBagNo',
+        'ShoulderBagYes',
+        'ShoulderBagAmbi'
+    ],
+    [
+        'SkirtNo',
+        'SkirtYes',
+        'SkirtAmbi'
+    ],
+    [
+        'UpperBodyBlack',
+        'UpperBodyWhite',
+        'UpperBodyGray',
+        'UpperBodyRed',
+        'UpperBodyGreen',
+        'UpperBodyBlue',
+        'UpperBodyUndefined',
+        'UpperBodyAmbi',
+        'UpperBodyOccluded'
+    ],
+    [
+        'LowerBodyBlack',
+        'LowerBodyWhite',
+        'LowerBodyKhaki',
+        'LowerBodyGray',
+        'LowerBodyBlue',
+        'LowerBodyUndefined',
+        'LowerBodyAmbi',
+        'LowerBodyOccluded'
+    ]
+]
+
+unival_titles = [
+    'T-Shirt',
+    'Backpack',
+    'Gender',
+    'Carrying',
+    'Long Hair',
+    'Long Jeans',
+    'Long Pants',
+    'MidShortPants',
+    'Shirt',
+    'Shoulder',
+    'Skirt',
+    'UpperBody',
+    'LowerBody'
+]
+
+multival = [
+]
+
+multival_titles = [
+]
