@@ -23,7 +23,7 @@ def load_data():
 
 def train_model(dataset):
     X = T.tensor4()
-    Y = T.matrix()
+    Y = T.ivector()
 
     layers = []
     layers.append(ConvPoolLayer(
@@ -31,7 +31,7 @@ def train_model(dataset):
         input_shape=(3, 128, 48),
         filter_shape=(20, 3, 5, 5),
         pool_shape=(2, 2),
-        active_func=actfuncs.sigmoid
+        active_func=actfuncs.tanh
     ))
 
     layers.append(ConvPoolLayer(
@@ -39,7 +39,7 @@ def train_model(dataset):
         input_shape=layers[-1].output_shape,
         filter_shape=(50, 20, 5, 5),
         pool_shape=(2, 2),
-        active_func=actfuncs.sigmoid,
+        active_func=actfuncs.tanh,
         flatten=True
     ))
 
@@ -47,22 +47,21 @@ def train_model(dataset):
         input=layers[-1].output,
         input_shape=layers[-1].output_shape,
         output_shape=500,
-        active_func=actfuncs.sigmoid
+        active_func=actfuncs.tanh
     ))
 
     layers.append(FullConnLayer(
         input=layers[-1].output,
         input_shape=layers[-1].output_shape,
-        output_shape=50,
-        active_func=actfuncs.sigmoid
+        output_shape=9,
+        active_func=actfuncs.softmax
     ))
 
     model = NeuralNet(layers, X, layers[-1].output)
     model.target = Y
-    model.cost = costfuncs.binxent(layers[-1].output, Y) + \
-        1e-3 * model.get_norm(2) + \
-        1e-3 * costfuncs.KL(0.05, layers[1].output)
-    model.error = costfuncs.binerr(layers[-1].output, Y)
+    model.cost = costfuncs.neglog(layers[-1].output, Y) + \
+        1e-3 * model.get_norm(2)
+    model.error = costfuncs.miscls_rate(layers[-1].output, Y)
 
     sgd.train(model, dataset, lr=1e-3, momentum=0.9,
               batch_size=100, n_epochs=200,

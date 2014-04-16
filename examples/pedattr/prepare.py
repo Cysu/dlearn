@@ -7,9 +7,10 @@ homepath = os.path.join('..', '..')
 if not homepath in sys.path:
     sys.path.insert(0, homepath)
 
+import conf_apis as conf
+
 
 def load_rawdata():
-    import conf_apis as conf
     from scipy.io import loadmat
 
     rawdata = []
@@ -36,7 +37,13 @@ def create_dataset(rawdata):
         # img = imgproc.resize(img, (80, 30))
         img = imgproc.subtract_luminance(img)
         img = np.rollaxis(img, 2)
-        return img
+        return img / 100.0
+
+    def select_unival(attr, title):
+        ind = conf.unival_titles.index(title)
+        vals = conf.unival[ind]
+        ind = [conf.names.index(v) for v in vals]
+        return np.where(attr[ind] == 1)[0][0]
 
     m = len(rawdata)
     X = [0] * m
@@ -44,15 +51,16 @@ def create_dataset(rawdata):
 
     for i, (img, attr) in enumerate(rawdata):
         X[i] = imgprep(img)
-        Y[i] = attr
+        # Y[i] = attr
+        Y[i] = select_unival(attr, 'UpperBody')
 
     X = np.asarray(X)
     Y = np.asarray(Y)
 
-    X = np.tanh(X - X.mean(axis=0))
+    X = X - X.mean(axis=0)
 
     dataset = Dataset(X, Y)
-    dataset.split(0.7, 0.2)
+    dataset.split(0.7, 0.2, datatype_x='float32', datatype_y='int32')
 
     return dataset
 
