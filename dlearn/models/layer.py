@@ -2,6 +2,14 @@ import numpy as np
 import theano
 import theano.tensor as T
 
+try:
+    from theano.sandbox.cuda.basic_ops import gpu_contiguous
+    from pylearn2.sandbox.cuda_convnet.filter_acts import FilterActs
+except ImportError:
+    use_convnet = False
+else:
+    use_convnet = True
+
 from .block import Block
 from ..utils import actfuncs
 from ..utils.math import nprng
@@ -215,8 +223,14 @@ class ConvPoolLayer(Block):
         self._params = [self._W, self._b]
 
         # Compute output
-        z = T.nnet.conv.conv2d(input=self._input, filters=self._W,
-                               filter_shape=self._filter_shape)
+        if not use_convnet or self._filter_shape[0] % 16 != 0:
+            z = T.nnet.conv.conv2d(input=self._input, filters=self._W,
+                                   filter_shape=self._filter_shape)
+        else:
+            conv_op = FilterActs(stride=1, partial_sum=1)
+            x = gpu_contiguous(self._input.dimshuffle(1, 2, 3, 0))
+            W = gpu_contiguous(self._W.dimshuffle(1, 2, 3, 0))
+            z = conv_op(x, W).dimshuffle(3, 0, 1, 2)
 
         if self._pool_shape != (1, 1):
             z = T.signal.downsample.max_pool_2d(input=z, ds=self._pool_shape,

@@ -29,7 +29,7 @@ def train_model(dataset):
     layers.append(ConvPoolLayer(
         input=X,
         input_shape=(3, 128, 48),
-        filter_shape=(20, 3, 5, 5),
+        filter_shape=(32, 3, 5, 5),
         pool_shape=(2, 2),
         active_func=actfuncs.tanh
     ))
@@ -37,7 +37,7 @@ def train_model(dataset):
     layers.append(ConvPoolLayer(
         input=layers[-1].output,
         input_shape=layers[-1].output_shape,
-        filter_shape=(50, 20, 5, 5),
+        filter_shape=(64, 32, 5, 5),
         pool_shape=(2, 2),
         active_func=actfuncs.tanh,
         flatten=True
