@@ -34,7 +34,6 @@ def create_dataset(rawdata):
     from dlearn.utils import imgproc
 
     def imgprep(img):
-        # img = imgproc.resize(img, (80, 30))
         img = imgproc.subtract_luminance(img)
         img = np.rollaxis(img, 2)
         return img / 100.0
@@ -46,13 +45,14 @@ def create_dataset(rawdata):
         return np.where(attr[ind] == 1)[0][0]
 
     m = len(rawdata)
-    X = [0] * m
-    Y = [0] * m
+    X = [0] * (2 * m)
+    Y = [0] * (2 * m)
 
     for i, (img, attr) in enumerate(rawdata):
-        X[i] = imgprep(img)
-        # Y[i] = attr
-        Y[i] = select_unival(attr, 'UpperBody')
+        X[i * 2] = imgprep(img)
+        X[i * 2 + 1] = X[i * 2][:, :, ::-1].copy()
+        Y[i * 2] = select_unival(attr, 'UpperBody')
+        Y[i * 2 + 1] = Y[i * 2]
 
     X = np.asarray(X)
     Y = np.asarray(Y)
