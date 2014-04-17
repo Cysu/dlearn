@@ -64,8 +64,7 @@ def train_model(dataset):
     model.error = costfuncs.miscls_rate(layers[-1].output, Y)
 
     sgd.train(model, dataset, lr=1e-3, momentum=0.9,
-              batch_size=100, n_epochs=200,
-              lr_decr=1.0)
+              batch_size=100, n_epochs=200)
 
     return model
 

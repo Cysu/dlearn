@@ -8,7 +8,7 @@ from ..utils.math import create_empty
 
 def train(model, dataset, lr=1e-4, momentum=0.9,
           batch_size=100, n_epochs=100,
-          improvement=1 - 1e-3, patience_incr=2.0, lr_decr=0.95,
+          patience_incr=2.0, lr_decr=0.5, epoch_waiting=5,
           never_stop=False):
     r"""Train the model with mini-batch Stochastic Gradient Descent(SGD).
 
@@ -26,13 +26,13 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
         The number of samples in each mini-batch. Default is 100.
     n_epochs : int, optional
         The number of training epochs. Default is 100.
-    improvement, patience_incr, lr_decr : float or double, optional
+    patience_incr, lr_decr : float or double, optional
         `patience` is utilized to stop training when the model converges. It is
         initialized as `n_batches` * 20. After each validation process, if
-        `current_valid_error` < `best_valid_error` * `improvement`, then
-        `patience` = `current_iter` * `patience_incr`, and `lr` = `lr` *
-        `lr_decr`. Default `improvement` is 1e-3, `patience_incr` is 2.0, and
-        `lr_decr` is 0.95.
+        `current_valid_error` < `best_valid_error`, then `patience` =
+        `current_iter` * `patience_incr`. Otherwise if there is no improvement
+        in the last `epoch_waiting` epochs, then `lr` = `lr` * `lr_decr`.
+        Default `patience_incr` is 2.0, and `lr_decr` is 0.5.
     never_stop : bool, optional
         If True, then the training process will never stop until user
         interrupts, otherwise it will stop when either reaches `n_epochs` or
@@ -94,6 +94,8 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
 
     patience = n_train_batches * 20
 
+    last_improve_epoch = 0
+
     print "Start training ..."
 
     begin_time = time.clock()
@@ -120,10 +122,9 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
 
             # testing
             if valid_error < best_valid_error:
-                if valid_error < best_valid_error * improvement:
-                    patience = max(patience, cur_iter * patience_incr)
-                    lr *= lr_decr
-                    print "Update patience {0}, lr {1}".format(patience, lr)
+                last_improve_epoch = epoch
+                patience = max(patience, cur_iter * patience_incr)
+                print "Update patience {0}".format(patience)
 
                 best_valid_error = valid_error
 
@@ -131,6 +132,11 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
                                      for j in xrange(n_test_batches)])
 
                 print "[test] error {0}".format(test_error)
+            elif epoch >= last_improve_epoch + epoch_waiting:
+                # lr decreasing
+                lr *= lr_decr
+                last_improve_epoch = epoch
+                print "Update lr {0}".format(lr)
 
             # early stopping
             if cur_iter > patience and not never_stop:
