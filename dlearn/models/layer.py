@@ -12,7 +12,7 @@ else:
 
 from .block import Block
 from ..utils import actfuncs
-from ..utils.math import nprng
+from ..utils.math import nprng, dropout
 
 
 class FullConnLayer(Block):
@@ -20,7 +20,7 @@ class FullConnLayer(Block):
     r"""Construct a fully connected layer.
 
     The output of the fully connected layer is
-    
+
     .. math::
         y = \sigma(Wx+b)
 
@@ -48,9 +48,16 @@ class FullConnLayer(Block):
     output_shape : int or list/tuple of int
         The shape of each output sample. If the type of `output_shape` is int,
         then each output sample is a vector.
+    dropout_input : None, theano.tensor, or list of theano.tensor, optional
+        None if no dropout input symbol is specified, and the `input` will be
+        used as `dropout_input`. Default is None.
+    dropout_ratio : None or float, optional
+        None if no dropout for this layer, otherwise the `dropout_ratio` portion
+        of output will be dropout. Default is None.
     active_func : None, theano.Op or function, optional
         If None, then no active function will be applied to the output,
-        otherwise the specified will be applied. Default is None.
+        otherwise the specified active function will be applied. Default is
+        None.
     W : None or theano.matrix(shared), optional
         If None, the weight matrix will be intialized randomly, otherwise it
         will be set to the specified value. Default is None.
@@ -61,8 +68,9 @@ class FullConnLayer(Block):
     """
 
     def __init__(self, input, input_shape, output_shape,
+                 dropout_input=None, dropout_ratio=None,
                  active_func=None, W=None, b=None):
-        super(FullConnLayer, self).__init__(input)
+        super(FullConnLayer, self).__init__(input, dropout_input)
 
         if isinstance(input_shape, int):
             self._input_shape = input_shape
@@ -79,6 +87,7 @@ class FullConnLayer(Block):
             raise ValueError("output_shape type error")
 
         self._active_func = active_func
+        self._dropout_ratio = dropout_ratio
 
         # Initialize parameters
         if W is None:
@@ -105,9 +114,18 @@ class FullConnLayer(Block):
 
         self._params = [self._W, self._b]
 
-        # Compute output
-        z = T.dot(self._input, self._W) + self._b
-        self._output = z if self._active_func is None else self._active_func(z)
+        # Compute output and dropout output
+        def f(x):
+            z = T.dot(x, self._W) + self._b
+            return z if self._active_func is None else self._active_func(z)
+
+        self._output = f(self._input)
+        self._dropout_output = f(self._dropout_input)
+
+        if self._dropout_ratio is not None and self._dropout_ratio > 0:
+            self._output = (1.0 - self._dropout_ratio) * self._output
+            self._dropout_output = dropout(self._dropout_output,
+                                           self._dropout_ratio)
 
     @property
     def input_shape(self):
@@ -169,6 +187,12 @@ class ConvPoolLayer(Block):
     pool_shape : None or list/tuple of int, optional
         If None, then no max-pooling will be performed, otherwise the shape of
         the max-pooling region should be (n_rows, n_cols). Default if None.
+    dropout_input : None, theano.tensor, or list of theano.tensor, optional
+        None if no dropout input symbol is specified, and the `input` will be
+        used as `dropout_input`. Default is None.
+    dropout_ratio : None or float, optional
+        None if no dropout for this layer, otherwise the `dropout_ratio` portion
+        of output will be dropout. Default is None.
     active_func : None, theano.Op or function, optional
         If None, then no active function will be applied to the output,
         otherwise the specified will be applied. Default is None.
@@ -178,14 +202,16 @@ class ConvPoolLayer(Block):
 
     """
 
-    def __init__(self, input, input_shape, filter_shape,
-                 pool_shape=None, active_func=None, flatten=False):
-        super(ConvPoolLayer, self).__init__(input)
+    def __init__(self, input, input_shape, filter_shape, pool_shape=None,
+                 dropout_input=None, dropout_ratio=None,
+                 active_func=None, flatten=False):
+        super(ConvPoolLayer, self).__init__(input, dropout_input)
 
         self._input = input
         self._input_shape = input_shape
         self._filter_shape = filter_shape
         self._pool_shape = pool_shape if pool_shape is not None else (1, 1)
+        self._dropout_ratio = dropout_ratio
         self._active_func = active_func
         self._flatten = flatten
 
@@ -222,29 +248,39 @@ class ConvPoolLayer(Block):
 
         self._params = [self._W, self._b]
 
-        # Compute output
-        if not use_convnet or self._filter_shape[0] % 16 != 0:
-            z = T.nnet.conv.conv2d(input=self._input, filters=self._W,
-                                   filter_shape=self._filter_shape)
-        else:
-            conv_op = FilterActs(stride=1, partial_sum=1)
-            x = gpu_contiguous(self._input.dimshuffle(1, 2, 3, 0))
-            W = gpu_contiguous(self._W.dimshuffle(1, 2, 3, 0))
-            z = conv_op(x, W).dimshuffle(3, 0, 1, 2)
+        # Compute output and dropout output
+        def f(x):
+            if not use_convnet or self._filter_shape[0] % 16 != 0:
+                z = T.nnet.conv.conv2d(input=x, filters=self._W,
+                                       filter_shape=self._filter_shape)
+            else:
+                conv_op = FilterActs(stride=1, partial_sum=1)
+                x = gpu_contiguous(x.dimshuffle(1, 2, 3, 0))
+                W = gpu_contiguous(self._W.dimshuffle(1, 2, 3, 0))
+                z = conv_op(x, W).dimshuffle(3, 0, 1, 2)
 
-        if self._pool_shape != (1, 1):
-            z = T.signal.downsample.max_pool_2d(input=z, ds=self._pool_shape,
-                                                ignore_border=True)
+            if self._pool_shape != (1, 1):
+                z = T.signal.downsample.max_pool_2d(
+                    input=z, ds=self._pool_shape,
+                    ignore_border=True)
 
-        z = z + self._b.dimshuffle('x', 0, 'x', 'x')
+            z = z + self._b.dimshuffle('x', 0, 'x', 'x')
 
-        if self._active_func is not None:
-            z = self._active_func(z)
+            if self._active_func is not None:
+                z = self._active_func(z)
 
-        if self._flatten:
-            z = z.flatten(2)
+            if self._flatten:
+                z = z.flatten(2)
 
-        self._output = z
+            return z
+
+        self._output = f(self._input)
+        self._dropout_output = f(self._dropout_input)
+
+        if self._dropout_ratio is not None and self._dropout_ratio > 0:
+            self._output = (1.0 - self._dropout_ratio) * self._output
+            self._dropout_output = dropout(self._dropout_output,
+                                           self._dropout_ratio)
 
     @property
     def input_shape(self):

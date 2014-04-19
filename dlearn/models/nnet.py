@@ -37,7 +37,7 @@ class NeuralNet(Block):
     """
 
     def __init__(self, blocks, input, output):
-        super(NeuralNet, self).__init__(input)
+        super(NeuralNet, self).__init__(input, None)
 
         self._blocks = blocks
 

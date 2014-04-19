@@ -40,6 +40,15 @@ def train_model(dataset):
         filter_shape=(64, 32, 5, 5),
         pool_shape=(2, 2),
         active_func=actfuncs.tanh,
+        flatten=False
+    ))
+
+    layers.append(ConvPoolLayer(
+        input=layers[-1].output,
+        input_shape=layers[-1].output_shape,
+        filter_shape=(128, 64, 3, 3),
+        pool_shape=(2, 2),
+        active_func=actfuncs.tanh,
         flatten=True
     ))
 
@@ -47,6 +56,8 @@ def train_model(dataset):
         input=layers[-1].output,
         input_shape=layers[-1].output_shape,
         output_shape=500,
+        dropout_input=layers[-1].dropout_output,
+        dropout_ratio=0.1,
         active_func=actfuncs.tanh
     ))
 
@@ -54,12 +65,13 @@ def train_model(dataset):
         input=layers[-1].output,
         input_shape=layers[-1].output_shape,
         output_shape=9,
+        dropout_input=layers[-1].dropout_output,
         active_func=actfuncs.softmax
     ))
 
     model = NeuralNet(layers, X, layers[-1].output)
     model.target = Y
-    model.cost = costfuncs.neglog(layers[-1].output, Y) + \
+    model.cost = costfuncs.neglog(layers[-1].dropout_output, Y) + \
         1e-3 * model.get_norm(2)
     model.error = costfuncs.miscls_rate(layers[-1].output, Y)
 
