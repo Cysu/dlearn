@@ -4,7 +4,8 @@ dlearn
 Introduction
 ------------
 
-`dlearn` is a Python deep learning module based on Theano. It helps to build and train deep learning models fastly.
+`dlearn` is a Python deep learning module based on Theano. It helps to build and
+train deep learning models more conveniently.
 
 TODO
 ----
