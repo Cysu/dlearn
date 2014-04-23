@@ -15,7 +15,7 @@ def load_rawdata():
 
     rawdata = []
     for dname in conf.datasets:
-        fpath = os.path.join(homepath, 'data', 'pedattr', dname)
+        fpath = os.path.join(homepath, 'data', 'human_attribute', dname)
         matdata = loadmat(fpath)
 
         m, n = matdata['images'].shape

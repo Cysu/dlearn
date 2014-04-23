@@ -5,37 +5,37 @@ datasets = [
 names = [
     'TshirtNo',
     'TshirtYes',
-    'TshirtAmbi',
+    'TshirtAmbiguous',
     'BackpackNo',
     'BackpackYes',
-    'BackpackAmbi',
-    'GenderFemale',
-    'GenderMale',
-    'GenderAmbi',
+    'BackpackAmbiguous',
+    'MaleNo',
+    'MaleYes',
+    'MaleAmbiguous',
     'CarryingNo',
     'CarryingYes',
-    'CarryingAmbi',
+    'CarryingAmbiguous',
     'LongHairNo',
     'LongHairYes',
-    'LongHairAmbi',
+    'LongHairAmbiguous',
     'LongJeansNo',
     'LongJeansYes',
-    'LongJeansAmbi',
+    'LongJeansAmbiguous',
     'LongPantsNo',
     'LongPantsYes',
-    'LongPantsAmbi',
+    'LongPantsAmbiguous',
     'MidShortPantsNo',
     'MidShortPantsYes',
-    'MidShortPantsAmbi',
+    'MidShortPantsAmbiguous',
     'ShirtNo',
     'ShirtYes',
-    'ShirtAmbi',
+    'ShirtAmbiguous',
     'ShoulderBagNo',
     'ShoulderBagYes',
-    'ShoulderBagAmbi',
+    'ShoulderBagAmbiguous',
     'SkirtNo',
     'SkirtYes',
-    'SkirtAmbi',
+    'SkirtAmbiguous',
     'UpperBodyBlack',
     'UpperBodyWhite',
     'UpperBodyGray',
@@ -43,7 +43,7 @@ names = [
     'UpperBodyGreen',
     'UpperBodyBlue',
     'UpperBodyUndefined',
-    'UpperBodyAmbi',
+    'UpperBodyAmbiguous',
     'UpperBodyOccluded',
     'LowerBodyBlack',
     'LowerBodyWhite',
@@ -51,7 +51,7 @@ names = [
     'LowerBodyGray',
     'LowerBodyBlue',
     'LowerBodyUndefined',
-    'LowerBodyAmbi',
+    'LowerBodyAmbiguous',
     'LowerBodyOccluded'
 ]
 
@@ -59,57 +59,57 @@ unival = [
     [
         'TshirtNo',
         'TshirtYes',
-        'TshirtAmbi'
+        'TshirtAmbiguous'
     ],
     [
         'BackpackNo',
         'BackpackYes',
-        'BackpackAmbi'
+        'BackpackAmbiguous'
     ],
     [
-        'GenderFemale',
-        'GenderMale',
-        'GenderAmbi'
+        'MaleNo',
+        'MaleYes',
+        'MaleAmbiguous'
     ],
     [
         'CarryingNo',
         'CarryingYes',
-        'CarryingAmbi'
+        'CarryingAmbiguous'
     ],
     [
         'LongHairNo',
         'LongHairYes',
-        'LongHairAmbi'
+        'LongHairAmbiguous'
     ],
     [
         'LongJeansNo',
         'LongJeansYes',
-        'LongJeansAmbi'
+        'LongJeansAmbiguous'
     ],
     [
         'LongPantsNo',
         'LongPantsYes',
-        'LongPantsAmbi'
+        'LongPantsAmbiguous'
     ],
     [
         'MidShortPantsNo',
         'MidShortPantsYes',
-        'MidShortPantsAmbi'
+        'MidShortPantsAmbiguous'
     ],
     [
         'ShirtNo',
         'ShirtYes',
-        'ShirtAmbi'
+        'ShirtAmbiguous'
     ],
     [
         'ShoulderBagNo',
         'ShoulderBagYes',
-        'ShoulderBagAmbi'
+        'ShoulderBagAmbiguous'
     ],
     [
         'SkirtNo',
         'SkirtYes',
-        'SkirtAmbi'
+        'SkirtAmbiguous'
     ],
     [
         'UpperBodyBlack',
@@ -119,7 +119,7 @@ unival = [
         'UpperBodyGreen',
         'UpperBodyBlue',
         'UpperBodyUndefined',
-        'UpperBodyAmbi',
+        'UpperBodyAmbiguous',
         'UpperBodyOccluded'
     ],
     [
@@ -129,7 +129,7 @@ unival = [
         'LowerBodyGray',
         'LowerBodyBlue',
         'LowerBodyUndefined',
-        'LowerBodyAmbi',
+        'LowerBodyAmbiguous',
         'LowerBodyOccluded'
     ]
 ]
@@ -137,7 +137,7 @@ unival = [
 unival_titles = [
     'T-Shirt',
     'Backpack',
-    'Gender',
+    'Male',
     'Carrying',
     'LongHair',
     'LongJeans',
