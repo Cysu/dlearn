@@ -11,10 +11,11 @@ def show_channels(chmaps, n_cols=8):
                     share_all=True)
 
     for i, chmap in enumerate(chmaps):
-        grid[i].imshow(chmap, vmin=chmaps.min(), vmax=chmaps.max())
+        grid[i].imshow(chmap)
 
     grid.axes_llc.get_xaxis().set_ticks([])
     grid.axes_llc.get_yaxis().set_ticks([])
 
     plt.draw()
+    plt.get_current_fig_manager().window.showMaximized()
     plt.show()

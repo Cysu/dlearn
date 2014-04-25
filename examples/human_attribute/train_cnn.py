@@ -23,12 +23,12 @@ def load_data():
 
 def train_model(dataset):
     X = T.tensor4()
-    Y = T.ivector()
+    Y = T.matrix()
 
     layers = []
     layers.append(ConvPoolLayer(
         input=X,
-        input_shape=(3, 128, 48),
+        input_shape=(3, 160, 80),
         filter_shape=(32, 3, 5, 5),
         pool_shape=(2, 2),
         active_func=actfuncs.tanh,
@@ -64,20 +64,20 @@ def train_model(dataset):
     layers.append(FullConnLayer(
         input=layers[-1].output,
         input_shape=layers[-1].output_shape,
-        output_shape=9,
+        output_shape=11,
         dropout_input=layers[-1].dropout_output,
         active_func=actfuncs.softmax
     ))
 
     model = NeuralNet(layers, X, layers[-1].output)
     model.target = Y
-    model.cost = costfuncs.neglog(layers[-1].dropout_output, Y) + \
+    model.cost = costfuncs.binxent(layers[-1].dropout_output, Y) + \
         1e-3 * model.get_norm(2)
-    model.error = costfuncs.miscls_rate(layers[-1].output, Y)
+    model.error = costfuncs.binerr(layers[-1].output, Y)
 
     sgd.train(model, dataset, lr=1e-3, momentum=0.9,
-              batch_size=100, n_epochs=200,
-              epoch_waiting=20)
+              batch_size=100, n_epochs=300,
+              epoch_waiting=10)
 
     return model
 

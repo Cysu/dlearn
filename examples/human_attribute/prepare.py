@@ -7,7 +7,7 @@ homepath = os.path.join('..', '..')
 if not homepath in sys.path:
     sys.path.insert(0, homepath)
 
-import conf_apis as conf
+import conf_cuhk_sar as conf
 
 
 def load_rawdata():
@@ -20,11 +20,10 @@ def load_rawdata():
 
         m, n = matdata['images'].shape
         for i in xrange(m):
-            for j in xrange(n):
-                if matdata['images'][i, j].size == 0:
-                    break
-                rawdata.append((matdata['images'][i, j],
-                                matdata['attributes'][i, 0].ravel()))
+            rawdata.append((
+                matdata['images'][i, 0],
+                matdata['attributes'][i, 0].ravel()
+            ))
 
     return rawdata
 
@@ -38,11 +37,17 @@ def create_dataset(rawdata):
         img = np.rollaxis(img, 2)
         return img / 100.0
 
-    def select_unival(attr, title):
+    def choose_unival(attr, title):
         ind = conf.unival_titles.index(title)
         vals = conf.unival[ind]
         ind = [conf.names.index(v) for v in vals]
         return np.where(attr[ind] == 1)[0][0]
+
+    def choose_multival(attr, title):
+        ind = conf.multival_titles.index(title)
+        vals = conf.multival[ind]
+        ind = [conf.names.index(v) for v in vals]
+        return attr[ind]
 
     m = len(rawdata)
     X = [0] * (2 * m)
@@ -51,7 +56,7 @@ def create_dataset(rawdata):
     for i, (img, attr) in enumerate(rawdata):
         X[i * 2] = imgprep(img)
         X[i * 2 + 1] = X[i * 2][:, :, ::-1].copy()
-        Y[i * 2] = select_unival(attr, 'UpperBody')
+        Y[i * 2] = choose_multival(attr, 'Upper Body Colors')
         Y[i * 2 + 1] = Y[i * 2]
 
     X = np.asarray(X)
@@ -60,7 +65,7 @@ def create_dataset(rawdata):
     X = X - X.mean(axis=0)
 
     dataset = Dataset(X, Y)
-    dataset.split(0.7, 0.2, datatype_x='float32', datatype_y='int32')
+    dataset.split(0.7, 0.2)
 
     return dataset
 
