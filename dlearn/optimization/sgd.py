@@ -6,6 +6,31 @@ import theano.tensor as T
 from ..utils.math import create_empty
 
 
+def _bind_data(model, subset, irange):
+    l, r = irange
+    givens = []
+
+    if isinstance(model.input, list):
+        for sym, val in zip(model.input, subset.input):
+            offset = val.cur_irange[0]
+            givens.extend((sym, val.gpu_data[l - offset:r - offset]))
+    else:
+        offset = subset.input.cur_irange[0]
+        givens.append(
+            (model.input, subset.input.gpu_data[l - offset:r - offset]))
+
+    if isinstance(model.target, list):
+        for sym, val in zip(model.target, subset.target):
+            offset = val.cur_irange[0]
+            givens.extend((sym, val.gpu_data[l - offset:r - offset]))
+    else:
+        offset = subset.target.cur_irange[0]
+        givens.append(
+            (model.target, subset.target.gpu_data[l - offset:r - offset]))
+
+    return givens
+
+
 def train(model, dataset, lr=1e-4, momentum=0.9,
           batch_size=100, n_epochs=100,
           patience_incr=2.0, lr_decr=0.5, epoch_waiting=5,
@@ -39,17 +64,18 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
         `patience` is consumed.
 
     """
-    n_train = dataset.train_x.get_value(borrow=True).shape[0]
-    n_valid = dataset.valid_x.get_value(borrow=True).shape[0]
-    n_test = dataset.test_x.get_value(borrow=True).shape[0]
+    n_train = len(dataset.train_ind)
+    n_valid = len(dataset.valid_ind)
+    n_test = len(dataset.test_ind)
 
     n_train_batches = n_train // batch_size
     n_valid_batches = n_valid // batch_size
     n_test_batches = n_test // batch_size
 
-    i = T.iscalar()  # mini-batch index
+    i = T.iscalar()     # batch index
     alpha = T.scalar()  # learning rate
     dummy = T.scalar()  # for parameter updates
+    l, r = i * batch_size, (i + 1) * batch_size
 
     # Comupute updates
     grads = T.grad(model.cost, model.parameters)
@@ -66,27 +92,18 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
     # Build functions
     inc_updates_func = theano.function(
         inputs=[i, alpha], outputs=model.cost, updates=inc_updates,
-        givens={
-            model.input: dataset.train_x[i * batch_size: (i + 1) * batch_size],
-            model.target: dataset.train_y[i * batch_size: (i + 1) * batch_size]
-        })
+        givens=_bind_data(model, dataset.train, [l, r]))
 
     param_updates_func = theano.function(
         inputs=[dummy], outputs=dummy, updates=param_updates)
 
     valid_func = theano.function(
         inputs=[i], outputs=model.error,
-        givens={
-            model.input: dataset.valid_x[i * batch_size: (i + 1) * batch_size],
-            model.target: dataset.valid_y[i * batch_size: (i + 1) * batch_size]
-        })
+        givens=_bind_data(model, dataset.valid, [l, r]))
 
     test_func = theano.function(
         inputs=[i], outputs=model.error,
-        givens={
-            model.input: dataset.test_x[i * batch_size: (i + 1) * batch_size],
-            model.target: dataset.test_y[i * batch_size: (i + 1) * batch_size]
-        })
+        givens=_bind_data(model, dataset.test, [l, r]))
 
     # Start training
     best_valid_error = np.inf
@@ -106,17 +123,21 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
         try:
             # training
             for j in xrange(n_train_batches):
-                cur_iter = epoch * n_train_batches + j
+                dataset.train.prepare([j * batch_size, (j + 1) * batch_size])
 
                 batch_cost = inc_updates_func(j, lr)
                 param_updates_func(0)
 
+                cur_iter = epoch * n_train_batches + j
                 print "[train] batch {0}/{1}, iter {2}, cost {3}".format(
                     j + 1, n_train_batches, cur_iter, batch_cost)
 
             # validation
-            valid_error = np.mean([valid_func(j)
-                                  for j in xrange(n_valid_batches)])
+            valid_error = []
+            for j in xrange(n_valid_batches):
+                dataset.valid.prepare([j * batch_size, (j + 1) * batch_size])
+                valid_error.append(valid_func(j))
+            valid_error = np.mean(valid_error)
 
             print "[valid] error {0}".format(valid_error)
 
@@ -128,8 +149,12 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
 
                 best_valid_error = valid_error
 
-                test_error = np.mean([test_func(j)
-                                     for j in xrange(n_test_batches)])
+                test_error = []
+                for j in xrange(n_test_batches):
+                    dataset.test.prepare(
+                        [j * batch_size, (j + 1) * batch_size])
+                    test_error.append(test_func(j))
+                test_error = np.mean(test_error)
 
                 print "[test] error {0}".format(test_error)
             elif epoch >= last_improve_epoch + epoch_waiting:

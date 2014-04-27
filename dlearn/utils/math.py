@@ -8,8 +8,8 @@ nprng = np.random.RandomState(999907)
 tnrng = T.shared_randomstreams.RandomStreams(999907)
 
 
-def create_shared(x, datatype='float32'):
-    return theano.shared(np.asarray(x, dtype=datatype), borrow=True)
+def create_shared(x):
+    return theano.shared(np.asarray(x), borrow=True)
 
 
 def create_empty(p):

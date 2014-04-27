@@ -77,7 +77,7 @@ def resize(image, shape, keep_ratio=False):
             elif image.ndim == 2:
                 ret[l:height+l,:] = image
     else:
-        raise ValueError("Invalid argument ``keep_ratio``")
+        raise ValueError("Invalid argument keep_ratio")
 
     if image.dtype == np.uint8:
         ret = (ret * 255).astype(np.uint8)

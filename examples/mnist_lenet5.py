@@ -10,8 +10,7 @@ if not homepath in sys.path:
 from dlearn.data.dataset import Dataset
 from dlearn.models.layer import FullConnLayer, ConvPoolLayer
 from dlearn.models.nnet import NeuralNet
-from dlearn.utils import actfuncs, costfuncs
-from dlearn.utils.math import create_shared
+from dlearn.utils import actfuncs, costfuncs, Wrapper
 from dlearn.optimization import sgd
 
 
@@ -21,32 +20,34 @@ def load_data():
     with open(fpath, 'rb') as f:
         train_set, valid_set, test_set = cPickle.load(f)
 
-    dataset = Dataset()
-
-    dataset.train_x = create_shared(
-        train_set[0].reshape(train_set[0].shape[0], 1, 28, 28))
-    dataset.train_y = create_shared(train_set[1], 'int32')
-
-    dataset.valid_x = create_shared(
-        valid_set[0].reshape(valid_set[0].shape[0], 1, 28, 28))
-    dataset.valid_y = create_shared(valid_set[1], 'int32')
-
-    dataset.test_x = create_shared(
-        test_set[0].reshape(test_set[0].shape[0], 1, 28, 28))
-    dataset.test_y = create_shared(test_set[1], 'int32')
+    dataset = Dataset(
+        train=Wrapper(
+            input=train_set[0].reshape(train_set[0].shape[0], 1, 28, 28),
+            target=train_set[1]
+        ),
+        valid=Wrapper(
+            input=valid_set[0].reshape(valid_set[0].shape[0], 1, 28, 28),
+            target=valid_set[1]
+        ),
+        test=Wrapper(
+            input=test_set[0].reshape(test_set[0].shape[0], 1, 28, 28),
+            target=test_set[1]
+        ),
+        limit=None
+    )
 
     return dataset
 
 
 def train_model(dataset):
     X = T.tensor4()
-    Y = T.ivector()
+    Y = T.lvector()
 
     layers = []
     layers.append(ConvPoolLayer(
         input=X,
         input_shape=(1, 28, 28),
-        filter_shape=(20, 1, 5, 5),
+        filter_shape=(32, 1, 5, 5),
         pool_shape=(2, 2),
         active_func=actfuncs.tanh
     ))
@@ -54,7 +55,7 @@ def train_model(dataset):
     layers.append(ConvPoolLayer(
         input=layers[-1].output,
         input_shape=layers[-1].output_shape,
-        filter_shape=(50, 20, 5, 5),
+        filter_shape=(64, 32, 5, 5),
         pool_shape=(2, 2),
         active_func=actfuncs.tanh,
         flatten=True
@@ -63,7 +64,7 @@ def train_model(dataset):
     layers.append(FullConnLayer(
         input=layers[-1].output,
         input_shape=layers[-1].output_shape,
-        output_shape=500,
+        output_shape=512,
         active_func=actfuncs.tanh
     ))
 
