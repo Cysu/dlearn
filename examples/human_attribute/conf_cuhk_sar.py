@@ -250,3 +250,15 @@ multival_titles = [
     'Upper Body Colors',
     'Upper Body Styles'
 ]
+
+segment_vals = {
+    'Background': 0,
+    'Hair': 9,
+    'Head': 19,
+    'Upper': 29,
+    'Arms': 50,
+    'Lower': 39,
+    'Legs': 60,
+    'Feet': 62
+}
+

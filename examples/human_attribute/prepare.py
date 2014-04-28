@@ -20,10 +20,15 @@ def load_rawdata():
 
         m, n = matdata['images'].shape
         for i in xrange(m):
-            rawdata.append((
+            rawdata.append([
                 matdata['images'][i, 0],
                 matdata['attributes'][i, 0].ravel()
-            ))
+            ])
+
+        fpath = os.path.join(homepath, 'data', 'human_segmentation', dname)
+        matdata = loadmat(fpath)
+        for i in xrange(m):
+            rawdata[i].append(matdata['segmentations'][i, 0])
 
     return rawdata
 
@@ -35,7 +40,7 @@ def create_dataset(rawdata):
     def imgprep(img):
         img = imgproc.subtract_luminance(img)
         img = np.rollaxis(img, 2)
-        return img / 100.0
+        return (img / 100.0).astype(np.float32)
 
     def choose_unival(attr, title):
         ind = conf.unival_titles.index(title)
@@ -47,24 +52,36 @@ def create_dataset(rawdata):
         ind = conf.multival_titles.index(title)
         vals = conf.multival[ind]
         ind = [conf.names.index(v) for v in vals]
-        return attr[ind]
+        return attr[ind].astype(np.float32)
+
+    def choose_segment(seg, title):
+        val = conf.segment_vals[title]
+        img = (seg == val).astype(np.float32)
+        img = imgproc.resize(img, [17, 7])
+        return img.astype(np.float32)
 
     m = len(rawdata)
     X = [0] * (2 * m)
     Y = [0] * (2 * m)
+    S = [0] * (2 * m)
 
-    for i, (img, attr) in enumerate(rawdata):
+    for i, (img, attr, seg) in enumerate(rawdata):
         X[i * 2] = imgprep(img)
         X[i * 2 + 1] = X[i * 2][:, :, ::-1].copy()
         Y[i * 2] = choose_multival(attr, 'Upper Body Colors')
         Y[i * 2 + 1] = Y[i * 2]
+        S[i * 2] = choose_segment(seg, 'Upper')
+        S[i * 2 + 1] = S[i * 2][:, ::-1].copy()
+        S[i * 2] = S[i * 2].ravel()
+        S[i * 2 + 1] = S[i * 2 + 1].ravel()
 
     X = np.asarray(X)
     Y = np.asarray(Y)
+    S = np.asarray(S)
 
     X = X - X.mean(axis=0)
 
-    dataset = Dataset(X, Y)
+    dataset = Dataset([X, S], Y)
     dataset.split(0.7, 0.2)
 
     return dataset

@@ -13,7 +13,7 @@ def _bind_data(model, subset, irange):
     if isinstance(model.input, list):
         for sym, val in zip(model.input, subset.input):
             offset = val.cur_irange[0]
-            givens.extend((sym, val.gpu_data[l - offset:r - offset]))
+            givens.append((sym, val.gpu_data[l - offset:r - offset]))
     else:
         offset = subset.input.cur_irange[0]
         givens.append(
@@ -22,7 +22,7 @@ def _bind_data(model, subset, irange):
     if isinstance(model.target, list):
         for sym, val in zip(model.target, subset.target):
             offset = val.cur_irange[0]
-            givens.extend((sym, val.gpu_data[l - offset:r - offset]))
+            givens.append((sym, val.gpu_data[l - offset:r - offset]))
     else:
         offset = subset.target.cur_irange[0]
         givens.append(

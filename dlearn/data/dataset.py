@@ -26,8 +26,17 @@ class Subset(object):
         self.target = target
 
     def prepare(self, irange):
-        self.input.prepare(irange)
-        self.target.prepare(irange)
+        if isinstance(self.input, list):
+            for x in self.input:
+                x.prepare(irange)
+        else:
+            self.input.prepare(irange)
+
+        if isinstance(self.target, list):
+            for x in self.target:
+                x.prepare(irange)
+        else:
+            self.target.prepare(irange)
 
 
 class Dataset(object):
