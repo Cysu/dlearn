@@ -15,20 +15,19 @@ def load_rawdata():
 
     rawdata = []
     for dname in conf.datasets:
-        fpath = os.path.join(homepath, 'data', 'human_attribute', dname)
-        matdata = loadmat(fpath)
+        fpath_a = os.path.join(homepath, 'data', 'human_attribute', dname)
+        matdata_a = loadmat(fpath_a)
 
-        m, n = matdata['images'].shape
+        fpath_s = os.path.join(homepath, 'data', 'human_segmentation', dname)
+        matdata_s = loadmat(fpath_s)
+
+        m, n = matdata_a['images'].shape
         for i in xrange(m):
             rawdata.append([
-                matdata['images'][i, 0],
-                matdata['attributes'][i, 0].ravel()
+                matdata_a['images'][i, 0],
+                matdata_a['attributes'][i, 0].ravel(),
+                matdata_s['segmentations'][i, 0]
             ])
-
-        fpath = os.path.join(homepath, 'data', 'human_segmentation', dname)
-        matdata = loadmat(fpath)
-        for i in xrange(m):
-            rawdata[i].append(matdata['segmentations'][i, 0])
 
     return rawdata
 
@@ -57,31 +56,33 @@ def create_dataset(rawdata):
     def choose_segment(seg, title):
         val = conf.segment_vals[title]
         img = (seg == val).astype(np.float32)
-        img = imgproc.resize(img, [17, 7])
         return img.astype(np.float32)
 
     m = len(rawdata)
     X = [0] * (2 * m)
-    Y = [0] * (2 * m)
+    A = [0] * (2 * m)
     S = [0] * (2 * m)
 
-    for i, (img, attr, seg) in enumerate(rawdata):
-        X[i * 2] = imgprep(img)
-        X[i * 2 + 1] = X[i * 2][:, :, ::-1].copy()
-        Y[i * 2] = choose_multival(attr, 'Upper Body Colors')
-        Y[i * 2 + 1] = Y[i * 2]
-        S[i * 2] = choose_segment(seg, 'Upper')
-        S[i * 2 + 1] = S[i * 2][:, ::-1].copy()
-        S[i * 2] = S[i * 2].ravel()
-        S[i * 2 + 1] = S[i * 2 + 1].ravel()
+    i = 0
+    for (img, attr, seg) in rawdata:
+        X[i] = imgprep(img)
+        A[i] = choose_multival(attr, 'Upper Body Colors')
+        S[i] = choose_segment(seg, 'Upper')
+
+        # Mirror
+        X[i + 1] = X[i][:, :, ::-1].copy()
+        A[i + 1] = A[i].copy()
+        S[i + 1] = S[i][:, ::-1].copy()
+
+        i += 2
 
     X = np.asarray(X)
-    Y = np.asarray(Y)
+    A = np.asarray(A)
     S = np.asarray(S)
 
     X = X - X.mean(axis=0)
 
-    dataset = Dataset([X, S], Y)
+    dataset = Dataset([X, S], A)
     dataset.split(0.7, 0.2)
 
     return dataset

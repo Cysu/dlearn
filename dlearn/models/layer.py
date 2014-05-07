@@ -7,8 +7,10 @@ try:
     from pylearn2.sandbox.cuda_convnet.filter_acts import FilterActs
 except ImportError:
     use_convnet = False
+    print 'Using theano convolution'
 else:
     use_convnet = True
+    print 'Using cuda-convnet'
 
 from .block import Block
 from ..utils import actfuncs
@@ -199,12 +201,20 @@ class ConvPoolLayer(Block):
     flatten : bool, optional
         If False, then output will not be flattened, otherwise the output of
         each sample will be flattened into a vector. Default is False.
+    W : None or theano.matrix(shared), optional
+        If None, the convolutional matrix will be intialized randomly, otherwise
+        it will be set to the specified value. Default is None.
+    b : None, float, or theano.vector(shared), optional
+        If None, the bias vector will be initialized as zero. If float, the bias
+        vector will be constant. Otherwise it will be set to the specified
+        value. Default is None.
 
     """
 
     def __init__(self, input, input_shape, filter_shape, pool_shape=None,
                  dropout_input=None, dropout_ratio=None,
-                 active_func=None, flatten=False):
+                 active_func=None, flatten=False,
+                 W=None, b=None):
         super(ConvPoolLayer, self).__init__(input, dropout_input)
 
         self._input = input
@@ -227,26 +237,35 @@ class ConvPoolLayer(Block):
             self._output_shape = np.prod(self._output_shape)
 
         # Initialize parameters
-        fan_in = np.prod(self._filter_shape[1:])
-        fan_out = self._filter_shape[0] * \
-            np.prod(self._filter_shape[2:]) / np.prod(self._pool_shape)
+        if W is None:
+            fan_in = np.prod(self._filter_shape[1:])
+            fan_out = self._filter_shape[0] * \
+                np.prod(self._filter_shape[2:]) / np.prod(self._pool_shape)
 
-        W_bound = np.sqrt(6.0 / (fan_in + fan_out))
+            W_bound = np.sqrt(6.0 / (fan_in + fan_out))
 
-        if active_func == actfuncs.sigmoid:
-            W_bound *= 4
+            if active_func == actfuncs.sigmoid:
+                W_bound *= 4
 
-        init_W = np.asarray(nprng.uniform(low=-W_bound, high=W_bound,
-                                          size=self._filter_shape),
-                            dtype=theano.config.floatX)
+            init_W = np.asarray(nprng.uniform(low=-W_bound, high=W_bound,
+                                              size=self._filter_shape),
+                                dtype=theano.config.floatX)
 
-        self._W = theano.shared(value=init_W, borrow=True)
+            self._W = theano.shared(value=init_W, borrow=True)
+        else:
+            self._W = W
 
-        init_b = np.zeros((filter_shape[0],), dtype=theano.config.floatX)
+        if b is None:
+            init_b = np.zeros((filter_shape[0],), dtype=theano.config.floatX)
 
-        self._b = theano.shared(value=init_b, borrow=True)
+            self._b = theano.shared(value=init_b, borrow=True)
+        else:
+            self._b = b
 
-        self._params = [self._W, self._b]
+        if isinstance(self._b, float):
+            self._params = [self._W]
+        else:
+            self._params = [self._W, self._b]
 
         # Compute output and dropout output
         def f(x):
@@ -264,7 +283,10 @@ class ConvPoolLayer(Block):
                     input=z, ds=self._pool_shape,
                     ignore_border=True)
 
-            z = z + self._b.dimshuffle('x', 0, 'x', 'x')
+            if isinstance(self._b, float):
+                z = z + self._b
+            else:
+                z = z + self._b.dimshuffle('x', 0, 'x', 'x')
 
             if self._active_func is not None:
                 z = self._active_func(z)

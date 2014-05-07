@@ -29,5 +29,9 @@ class HierarData(object):
         return self._cur_irange
 
     @property
+    def cpu_data(self):
+        return self._cpu_data
+
+    @property
     def gpu_data(self):
         return self._gpu_data

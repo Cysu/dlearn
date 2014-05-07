@@ -92,18 +92,22 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
     # Build functions
     inc_updates_func = theano.function(
         inputs=[i, alpha], outputs=model.cost, updates=inc_updates,
-        givens=_bind_data(model, dataset.train, [l, r]))
+        givens=_bind_data(model, dataset.train, [l, r]),
+        on_unused_input='ignore')
 
     param_updates_func = theano.function(
-        inputs=[dummy], outputs=dummy, updates=param_updates)
+        inputs=[dummy], outputs=dummy, updates=param_updates,
+        on_unused_input='ignore')
 
     valid_func = theano.function(
         inputs=[i], outputs=model.error,
-        givens=_bind_data(model, dataset.valid, [l, r]))
+        givens=_bind_data(model, dataset.valid, [l, r]),
+        on_unused_input='ignore')
 
     test_func = theano.function(
         inputs=[i], outputs=model.error,
-        givens=_bind_data(model, dataset.test, [l, r]))
+        givens=_bind_data(model, dataset.test, [l, r]),
+        on_unused_input='ignore')
 
     # Start training
     best_valid_error = np.inf
