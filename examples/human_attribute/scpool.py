@@ -23,6 +23,13 @@ def load_data():
     return dataset
 
 
+def pooling(fmaps):
+    s = fmaps.sum(axis=[2, 3])
+    # Z = T.nnet.sigmoid(fmaps).sum(axis=[2, 3])
+    Z = abs(T.tanh(fmaps)).sum(axis=[2, 3])
+    return s / Z
+
+
 def train_model(dataset):
     X = T.tensor4()
     A = T.matrix()
@@ -59,8 +66,7 @@ def train_model(dataset):
         b=0.0
     ))
 
-    F = layers[-1].output.sum(axis=[2, 3]) * 107.0 / \
-        S.sum(axis=[1, 2]).dimshuffle(0, 'x')
+    F = pooling(layers[-1].output)
 
     layers.append(FullConnLayer(
         input=F,
@@ -84,7 +90,7 @@ def train_model(dataset):
         1e-3 * model.get_norm(2)
     model.error = costfuncs.binerr(layers[-1].output, A)
 
-    sgd.train(model, dataset, lr=1e-3, momentum=0.9,
+    sgd.train(model, dataset, lr=1e-2, momentum=0.9,
               batch_size=100, n_epochs=300,
               epoch_waiting=10)
 

@@ -24,13 +24,13 @@ def load_model():
 
 
 def visualize(model, subset):
-    W = model.blocks[3]._W.get_value(borrow=True)[:, 0]
-    W = W.reshape((128, 17, 7))
-    vis.show_channels(W, n_cols=32)
+    # W = model.blocks[3]._W.get_value(borrow=True)[:, 0]
+    # W = W.reshape((128, 17, 7))
+    # vis.show_channels(W, n_cols=32)
 
     f = theano.function(
         inputs=model.input,
-        outputs=model.blocks[2].output,
+        outputs=model.blocks[3].input,
         on_unused_input='ignore'
     )
 
@@ -39,9 +39,10 @@ def visualize(model, subset):
 
     for i in xrange(100):
         y = f(X.cpu_data[i:i + 1], S.cpu_data[i:i + 1])
-        # y = y.reshape(model.blocks[2].output_shape)
-        y = y.reshape((128, 17, 7))
-        vis.show_channels(y, n_cols=32, normalize=[-1, 1])
+        # y = y.reshape(model.blocks[0].output_shape)
+        # y = y.reshape((128, 17, 7))
+        y = y.reshape((1, 16, 8))
+        vis.show_channels(y, n_cols=1, normalize=[-1, 1])
 
 
 if __name__ == '__main__':
