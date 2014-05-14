@@ -34,9 +34,7 @@ def visualize(model, subset):
         on_unused_input='ignore'
     )
 
-    subset.prepare([0, 100])
     X, S = subset.input
-
     for i in xrange(100):
         y = f(X.cpu_data[i:i + 1], S.cpu_data[i:i + 1])
         # y = y.reshape(model.blocks[0].output_shape)
