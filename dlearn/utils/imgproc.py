@@ -32,7 +32,6 @@ def resize(image, shape, keep_ratio=False):
         desired width. Extra rows will be either truncated or filled with zero.
 
     """
-
     if image.ndim == 3:
         shape += (image.shape[2],)
     elif image.ndim != 2:

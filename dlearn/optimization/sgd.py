@@ -33,7 +33,7 @@ def _bind_data(model, subset, irange):
 
 def train(model, dataset, lr=1e-4, momentum=0.9,
           batch_size=100, n_epochs=100,
-          patience_incr=2.0, lr_decr=0.5, epoch_waiting=5,
+          patience_incr=2.0, lr_decr=0.5, epoch_waiting=10,
           never_stop=False):
     r"""Train the model with mini-batch Stochastic Gradient Descent(SGD).
 
@@ -51,13 +51,16 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
         The number of samples in each mini-batch. Default is 100.
     n_epochs : int, optional
         The number of training epochs. Default is 100.
-    patience_incr, lr_decr : float or double, optional
+    patience_incr : float or double, optional
+    lr_decr : float or double, optional
+    epoch_waiting : float or double, optional
         `patience` is utilized to stop training when the model converges. It is
         initialized as `n_batches` * 20. After each validation process, if
         `current_valid_error` < `best_valid_error`, then `patience` =
         `current_iter` * `patience_incr`. Otherwise if there is no improvement
         in the last `epoch_waiting` epochs, then `lr` = `lr` * `lr_decr`.
-        Default `patience_incr` is 2.0, and `lr_decr` is 0.5.
+        Default `patience_incr` is 2.0, `lr_decr` is 0.5, and epoch_waiting is
+        10.
     never_stop : bool, optional
         If True, then the training process will never stop until user
         interrupts, otherwise it will stop when either reaches `n_epochs` or

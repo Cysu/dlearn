@@ -9,7 +9,9 @@ Subpackages
     dlearn.data
     dlearn.models
     dlearn.optimization
+    dlearn.stats
     dlearn.utils
+    dlearn.visualization
 
 Module contents
 ---------------

@@ -18,6 +18,7 @@ import mock
 
 # Mock some third-party modules
 mock_modules = ['numpy', 'theano', 'theano.tensor',
+                'matplotlib', 'matplotlib.pyplot', 'mpl_toolkits.axes_grid1',
                 'skimage', 'skimage.transform', 'skimage.color',
                 'sklearn', 'sklearn.preprocessing']
 

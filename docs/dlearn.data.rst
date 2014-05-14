@@ -12,6 +12,14 @@ dlearn.data.dataset module
     :undoc-members:
     :show-inheritance:
 
+dlearn.data.hidata module
+-------------------------
+
+.. automodule:: dlearn.data.hidata
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------
