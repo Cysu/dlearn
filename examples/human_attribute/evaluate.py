@@ -53,20 +53,30 @@ def compute_output(model, subset):
 
 
 def compute_stats(output, target):
-    import matplotlib.pyplot as plt
-    import matplotlib.figure as fig
-
     n = target.shape[1]
-    n_cols = 4
-    n_rows = (n // 4) + 1
-
+    ret = [0] * n
     for j in xrange(n):
-        # Compute stats
         o = output[:, j].ravel()
         t = target[:, j].ravel()
         fpr, tpr, thresh = stats.roc(o, t)
         auc = stats.auc(fpr, tpr)
+        ret[j] = (auc, fpr, tpr, thresh)
 
+    return ret
+
+
+def save_stats(ret):
+    with open('stats_{0}.pkl'.format(mdname), 'wb') as f:
+        cPickle.dump(ret, f, cPickle.HIGHEST_PROTOCOL)
+
+
+def show_stats(ret):
+    import matplotlib.pyplot as plt
+
+    n_cols = 4
+    n_rows = len(ret) // n_cols + 1
+
+    for j, (auc, fpr, tpr, thresh) in enumerate(ret):
         # Plot stats
         plt.subplot(n_rows, n_cols, j)
         plt.plot(fpr, tpr)
@@ -75,11 +85,12 @@ def compute_stats(output, target):
         plt.title('AUC = {0}'.format(auc))
 
     plt.show()
-    fig.savefig('stats.png')
 
 
 if __name__ == '__main__':
     dataset = load_data()
     model = load_model()
     output = compute_output(model, dataset.test)
-    compute_stats(output, dataset.test.target.cpu_data)
+    ret = compute_stats(output, dataset.test.target.cpu_data)
+    save_stats(ret)
+    show_stats(ret)
