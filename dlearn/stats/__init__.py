@@ -156,7 +156,7 @@ def auc(x, y, range_x=None, range_y=None):
     auc = 0
     for i in xrange(len(x) - 1):
         dx = x[i + 1] - x[i]
-        ybar = (y[i + 1] - y[i]) / 2.0
+        ybar = (y[i + 1] + y[i]) / 2.0
         auc += ybar * dx
 
     return auc / ((range_y[1] - range_y[0]) * (range_x[1] - range_x[0]))

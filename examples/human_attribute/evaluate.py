@@ -70,6 +70,12 @@ def save_stats(ret):
         cPickle.dump(ret, f, cPickle.HIGHEST_PROTOCOL)
 
 
+def load_stats():
+    with open('stats_{0}.pkl'.format(mdname), 'rb') as f:
+        ret = cPickle.load(f)
+    return ret
+
+
 def show_stats(ret):
     import matplotlib.pyplot as plt
 
@@ -80,8 +86,6 @@ def show_stats(ret):
         # Plot stats
         plt.subplot(n_rows, n_cols, j)
         plt.plot(fpr, tpr)
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
         plt.title('AUC = {0}'.format(auc))
 
     plt.show()
@@ -93,4 +97,5 @@ if __name__ == '__main__':
     output = compute_output(model, dataset.test)
     ret = compute_stats(output, dataset.test.target.cpu_data)
     save_stats(ret)
+    ret = load_stats()
     show_stats(ret)
