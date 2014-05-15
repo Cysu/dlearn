@@ -86,16 +86,16 @@ def show_stats(ret):
         # Plot stats
         plt.subplot(n_rows, n_cols, j)
         plt.plot(fpr, tpr)
-        plt.title('AUC = {0}'.format(auc))
+        plt.title('AUC = {:.2f}%'.format(auc * 100))
 
     plt.show()
 
 
 if __name__ == '__main__':
-    dataset = load_data()
-    model = load_model()
-    output = compute_output(model, dataset.test)
-    ret = compute_stats(output, dataset.test.target.cpu_data)
-    save_stats(ret)
+    # dataset = load_data()
+    # model = load_model()
+    # output = compute_output(model, dataset.test)
+    # ret = compute_stats(output, dataset.test.target.cpu_data)
+    # save_stats(ret)
     ret = load_stats()
     show_stats(ret)
