@@ -83,7 +83,7 @@ def create_dataset(rawdata):
 
     X = X - X.mean(axis=0)
 
-    dataset = Dataset(X, S)
+    dataset = Dataset([X, A], S)
     dataset.split(0.7, 0.2)
 
     return dataset
