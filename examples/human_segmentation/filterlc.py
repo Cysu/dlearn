@@ -32,15 +32,28 @@ def train_model(dataset):
         input_shape=(3, 160, 80),
         filter_shape=(32, 3, 5, 5),
         pool_shape=(2, 2),
+        dropout_ratio=0.1,
         active_func=actfuncs.tanh,
         flatten=False
     ))
+    
+    filter_layers.append(ConvPoolLayer(
+        input=filter_layers[-1].output,
+        input_shape=filter_layers[-1].output_shape,
+        filter_shape=(64, 32, 5, 5),
+        pool_shape=(2, 2),
+        dropout_input=filter_layers[-1].dropout_output,
+        active_func=actfuncs.tanh,
+        flatten=False
+    ))
+
 
     weight_layers = []
     weight_layers.append(FullConnLayer(
         input=A,
         input_shape=11,
-        output_shape=64,
+        output_shape=128,
+        dropout_ratio=0.1,
         active_func=actfuncs.tanh
     ))
 
@@ -48,6 +61,7 @@ def train_model(dataset):
         input=weight_layers[-1].output,
         input_shape=weight_layers[-1].output_shape,
         output_shape=filter_layers[-1].output_shape[0],
+        dropout_input=weight_layers[-1].dropout_output,
         active_func=actfuncs.tanh
     ))
 
@@ -56,13 +70,18 @@ def train_model(dataset):
     wF = (w.dimshuffle(0, 1, 'x', 'x') * F).sum(axis=1)
     wF = actfuncs.sigmoid(wF)
 
+    F_dropout = filter_layers[-1].dropout_output
+    w_dropout = weight_layers[-1].dropout_output
+    wF_dropout = (w_dropout.dimshuffle(0, 1, 'x', 'x') * F_dropout).sum(axis=1)
+    wF_dropout = actfuncs.sigmoid(wF_dropout)
+
     model = NeuralNet(filter_layers + weight_layers, [X, A], wF)
     model.target = S
-    model.cost = costfuncs.binxent(wF.flatten(2), S.flatten(2)) + \
+    model.cost = costfuncs.binxent(wF_dropout.flatten(2), S.flatten(2)) + \
         1e-3 * model.get_norm(2)
     model.error = costfuncs.binerr(wF.flatten(2), S.flatten(2))
 
-    sgd.train(model, dataset, lr=1e-3, momentum=0.9,
+    sgd.train(model, dataset, lr=5e-4, momentum=0.9,
               batch_size=100, n_epochs=300,
               epoch_waiting=10)
 

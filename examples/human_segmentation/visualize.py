@@ -25,6 +25,9 @@ def load_model():
 
 
 def visualize(model, subset):
+    if not os.path.isdir('mpl_output'):
+        os.mkdir('mpl_output')
+
     f = theano.function(
         inputs=model.input,
         outputs=model.output,
@@ -37,8 +40,8 @@ def visualize(model, subset):
     for i in xrange(100):
         y = f(X.cpu_data[i:i + 1], A.cpu_data[i:i + 1])
         y = np.vstack((y.reshape(1, 37, 17), S.cpu_data[i:i + 1]))
-        fig = vis.show_channels(y, n_cols=2, normalize=[0, 1])
-        fig.savefig('fig/{:04d}'.format(i))
+        vis.show_channels(y, n_cols=2, normalize=[0, 1],
+                          ofpath=os.path.join('mpl_output', '{:04d}.png'.format(i)))
 
 
 if __name__ == '__main__':

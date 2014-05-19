@@ -56,7 +56,7 @@ def create_dataset(rawdata):
     def choose_segment(seg, title):
         val = conf.segment_vals[title]
         img = (seg == val).astype(np.float32)
-        img = imgproc.resize(img, (78, 38))
+        img = imgproc.resize(img, (37, 17))
         return img.astype(np.float32)
 
     m = len(rawdata)
