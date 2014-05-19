@@ -40,8 +40,8 @@ def visualize(model, subset):
     for i in xrange(100):
         y = f(X.cpu_data[i:i + 1], A.cpu_data[i:i + 1])
         y = np.vstack((y.reshape(1, 37, 17), S.cpu_data[i:i + 1]))
-        vis.show_channels(y, n_cols=2, normalize=[0, 1],
-                          ofpath=os.path.join('mpl_output', '{:04d}.png'.format(i)))
+        fp = os.path.join('mpl_output', '{:04d}.png'.format(i))
+        vis.show_channels(y, n_cols=2, normalize=[0, 1], ofpath=fp)
 
 
 if __name__ == '__main__':

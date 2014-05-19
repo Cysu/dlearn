@@ -36,7 +36,7 @@ def train_model(dataset):
         active_func=actfuncs.tanh,
         flatten=False
     ))
-    
+
     filter_layers.append(ConvPoolLayer(
         input=filter_layers[-1].output,
         input_shape=filter_layers[-1].output_shape,
@@ -46,7 +46,6 @@ def train_model(dataset):
         active_func=actfuncs.tanh,
         flatten=False
     ))
-
 
     weight_layers = []
     weight_layers.append(FullConnLayer(

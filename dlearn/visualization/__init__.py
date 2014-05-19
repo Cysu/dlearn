@@ -50,4 +50,3 @@ def show_channels(chmaps, n_cols=8, normalize=None, ofpath=None):
     else:
         fig.savefig(ofpath)
         plt.close(fig)
-
