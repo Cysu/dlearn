@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import AxesGrid
 
 
-def show_channels(chmaps, n_cols=8, normalize=None):
+def show_channels(chmaps, n_cols=8, normalize=None, maximize=False):
     """Display multiple channels of 2D images.
 
     Parameters
@@ -14,8 +14,12 @@ def show_channels(chmaps, n_cols=8, normalize=None):
         The number of channels to be displayed in each row. Default is 8.
     normalize : None or list/tuple of int, optional
         If None, each channel will be normalized itself, otherwise all the
-        channels will be uniformly normalized according to `normalize`, which
+        channels will be uniformly normalized according to this argument, which
         should be (vmin, vmax). Default is None.
+    maximize : Bool, optional
+        If False, the window will not be maximized, otherwise the window will be
+        maximized. Notice that when rendering on server without X11, this option
+        must be False. Default is False.
 
     """
     n_rows = (chmaps.shape[0] - 1) // n_cols + 1
@@ -28,7 +32,9 @@ def show_channels(chmaps, n_cols=8, normalize=None):
     else:
         vmin, vmax = normalize
 
-    grid = AxesGrid(plt.figure(), 111,
+    fig = plt.figure()
+
+    grid = AxesGrid(fig, 111,
                     nrows_ncols=(n_rows, n_cols),
                     axes_pad=0.0,
                     share_all=True)
@@ -39,5 +45,9 @@ def show_channels(chmaps, n_cols=8, normalize=None):
     grid.axes_llc.get_xaxis().set_ticks([])
     grid.axes_llc.get_yaxis().set_ticks([])
 
-    plt.get_current_fig_manager().window.showMaximized()
+    if maximize:
+        plt.get_current_fig_manager().window.showMaximized()
+
     plt.show()
+
+    return fig
