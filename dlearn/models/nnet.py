@@ -49,6 +49,7 @@ class NeuralNet(Block):
         self._cost = None
         self._error = None
         self._target = None
+        self._consts = []
         self._inc_updates = []
         self._param_updates = []
 
@@ -79,6 +80,14 @@ class NeuralNet(Block):
     @error.setter
     def error(self, value):
         self._error = value
+
+    @property
+    def consts(self):
+        return self._consts
+
+    @consts.setter
+    def consts(self, value):
+        self._consts = value
 
     @property
     def inc_updates(self):

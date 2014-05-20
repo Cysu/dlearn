@@ -81,7 +81,8 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
     l, r = i * batch_size, (i + 1) * batch_size
 
     # Comupute updates
-    grads = T.grad(model.cost, model.parameters)
+    grads = T.grad(model.cost, model.parameters,
+                   consider_constant=model.consts)
 
     incs = [create_empty(p) for p in model.parameters]
 

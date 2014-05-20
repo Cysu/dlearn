@@ -21,11 +21,12 @@ def load_data():
     return dataset
 
 
-def scale_per_channel(F, v_range=[-1, 1]):
+def scale_per_channel(F, consts, v_range=[-1, 1]):
     vmin, vmax = v_range
     fmin, fmax = F.min(axis=[2, 3]), F.max(axis=[2, 3])
     F = vmin + (vmax - vmin) * (F - fmin.dimshuffle(0, 1, 'x', 'x')) / \
         (fmax - fmin).dimshuffle(0, 1, 'x', 'x')
+    consts.extend([fmin, fmax])
     return F
 
 
@@ -62,12 +63,14 @@ def train_model(dataset):
         active_func=actfuncs.tanh
     ))
 
-    F = scale_per_channel(filter_layers[-1].output)
+    consts = []
+
+    F = scale_per_channel(filter_layers[-1].output, consts)
     w = weight_layers[-1].output
     wF = (w.dimshuffle(0, 1, 'x', 'x') * F).sum(axis=1)
     wF = actfuncs.sigmoid(wF)
 
-    F_dropout = scale_per_channel(filter_layers[-1].dropout_output)
+    F_dropout = scale_per_channel(filter_layers[-1].dropout_output, consts)
     w_dropout = weight_layers[-1].dropout_output
     wF_dropout = (w_dropout.dimshuffle(0, 1, 'x', 'x') * F_dropout).sum(axis=1)
     wF_dropout = actfuncs.sigmoid(wF_dropout)
@@ -77,6 +80,7 @@ def train_model(dataset):
     model.cost = costfuncs.binxent(wF_dropout.flatten(2), S.flatten(2)) + \
         1e-3 * model.get_norm(2)
     model.error = costfuncs.binerr(wF.flatten(2), S.flatten(2))
+    model.consts = consts
 
     sgd.train(model, dataset, lr=1e-3, momentum=0.9,
               batch_size=100, n_epochs=300,
