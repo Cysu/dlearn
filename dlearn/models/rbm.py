@@ -102,7 +102,7 @@ class RBM(object):
 
         chain_end = nv_samples[-1]
 
-        cost = self.free_energy(self.input).mean() - \
+        cost = self.free_energy(self._input).mean() - \
             self.free_energy(chain_end).mean()
 
         grads = T.grad(cost, self._params, consider_constant=[chain_end])
@@ -121,16 +121,15 @@ class RBM(object):
     def get_pseudo_likelihood_cost(self, updates):
         bit_i_idx = theano.shared(value=0)
 
-        xi = T.round(self.input)
+        xi = T.round(self._input)
         fe_xi = self.free_energy(xi)
 
         xi_flip = T.set_subtensor(xi[:, bit_i_idx], 1 - xi[:, bit_i_idx])
         fe_xi_flip = self.free_energy(xi_flip)
 
-        cost = T.mean(self.n_visible * T.log(T.nnet.sigmoid(fe_xi_flip -
-                                                            fe_xi)))
+        cost = T.mean(self._vshape * T.log(T.nnet.sigmoid(fe_xi_flip - fe_xi)))
 
-        updates[bit_i_idx] = (bit_i_idx + 1) % self.n_visible
+        updates[bit_i_idx] = (bit_i_idx + 1) % self._vshape
 
         return cost
 

@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 from mpl_toolkits.axes_grid1 import AxesGrid
 
 
-def show_channels(chmaps, n_cols=8, normalize=None, ofpath=None):
+def show_channels(chmaps, n_cols=8, normalize=None, grayscale=False, ofpath=None):
     """Display multiple channels of 2D images.
 
     Parameters
@@ -16,6 +17,9 @@ def show_channels(chmaps, n_cols=8, normalize=None, ofpath=None):
         If None, each channel will be normalized itself, otherwise all the
         channels will be uniformly normalized according to this argument, which
         should be (vmin, vmax). Default is None.
+    grayscale : bool, optional
+        If False, each channel will be displayed as color heat map. Otherwise
+        each channel will be displayed as grayscale image. Default is False.
     ofpath : None or str, optional
         If None, then the figure will be plotted to a window. Otherwise the
         figure will be saved to `ofpath`. Default is None.
@@ -38,8 +42,12 @@ def show_channels(chmaps, n_cols=8, normalize=None, ofpath=None):
                     axes_pad=0.0,
                     share_all=True)
 
-    for i, chmap in enumerate(chmaps):
-        grid[i].imshow(chmap, vmin=vmin, vmax=vmax)
+    if not grayscale:
+        for i, chmap in enumerate(chmaps):
+            grid[i].imshow(chmap, vmin=vmin, vmax=vmax)
+    else:
+        for i, chmap in enumerate(chmaps):
+            grid[i].imshow(chmap, cmap=cm.Greys_r)
 
     grid.axes_llc.get_xaxis().set_ticks([])
     grid.axes_llc.get_yaxis().set_ticks([])

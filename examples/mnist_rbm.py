@@ -45,12 +45,12 @@ def load_data():
 def train_model(dataset):
     # Construct the RBM model
     X = T.matrix()
-    index = T.lvector()
+    index = T.lscalar()
 
     n_epochs = 15
     batch_size = 20
     vshape, hshape = 784, 500
-    n_batches = dataset.train.cpu_data.shape[0] / batch_size
+    n_batches = dataset.train.input.cpu_data.shape[0] / batch_size
 
     persistent_chain = theano.shared(np.zeros((batch_size, hshape),
                                               dtype=theano.config.floatX),
@@ -58,7 +58,7 @@ def train_model(dataset):
 
     rbm = RBM(X, vshape, hshape)
 
-    cost, updates = rbm.get_cost_updates(lr=1e-3,
+    cost, updates = rbm.get_cost_updates(lr=0.1,
                                          persistent=persistent_chain,
                                          k=15)
 
@@ -66,7 +66,7 @@ def train_model(dataset):
     if not os.path.isdir('rbm_plots'):
         os.mkdir('rbm_plots')
 
-    train_data = dataset.train.cpu_data.astype(theano.config.floatX)
+    train_data = dataset.train.input.cpu_data.astype(theano.config.floatX)
     train_data = theano.shared(train_data, borrow=True)
 
     train_rbm = theano.function(
@@ -76,16 +76,17 @@ def train_model(dataset):
     plot_time = 0
     start_time = time.clock()
 
-    for epoch in n_epochs:
-        mean_cost = np.mean([train_rbm(i) for i in n_batches])
+    for epoch in xrange(n_epochs):
+        mean_cost = np.mean([train_rbm(i) for i in xrange(n_batches)])
 
         print 'Training epoch {0}, cost {1}'.format(epoch, mean_cost)
 
         plot_start = time.clock()
-        W = rbm._W.get_value(borrow=True).T[1:100]
+        W = rbm._W.get_value(borrow=True).T[0:100]
         ofpath = os.path.join(
             'rbm_plots', 'filter_epoch_{:03d}.png'.format(epoch))
-        show_channels(W, n_cols=10, ofpath=ofpath)
+        show_channels(W.reshape((100, 28, 28)),
+                      n_cols=10, grayscale=True, ofpath=ofpath)
         plot_stop = time.clock()
         plot_time += plot_stop - plot_start
 
@@ -105,10 +106,10 @@ def gen_samples(dataset, model):
     n_chains = 20
     plot_every = 1000
 
-    test_idx = nprng.randint(dataset.test.cpu_data.shape[0] - n_chains)
+    test_idx = nprng.randint(dataset.test.input.cpu_data.shape[0] - n_chains)
 
     persistent_chain = theano.shared(
-        dataset.test.cpu_data[test_idx: test_idx + n_chains].astype(
+        dataset.test.input.cpu_data[test_idx: test_idx + n_chains].astype(
             theano.config.floatX),
         borrow=True)
 
@@ -124,8 +125,9 @@ def gen_samples(dataset, model):
         inputs=[], outputs=v_samples[-1], updates=updates)
 
     evolutions = np.vstack([sample_fn() for __ in xrange(n_samples)])
+    evolutions = evolutions.reshape((n_samples * n_chaines, 28, 28))
 
-    show_channels(evolutions, n_cols=n_chains, normalize=[0, 1],
+    show_channels(evolutions, n_cols=n_chains, grayscale=True,
                   ofpath=os.path.join('rbm_plots', 'samples.png'))
 
 
