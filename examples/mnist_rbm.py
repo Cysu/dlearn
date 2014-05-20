@@ -95,6 +95,8 @@ def train_model(dataset):
     print 'Training finished, time {0}'.format(
         stop_time - start_time - plot_time)
 
+    return rbm
+
 
 def save_model(model):
     with open('model.pkl', 'wb') as f:
