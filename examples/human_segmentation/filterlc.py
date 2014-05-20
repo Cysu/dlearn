@@ -21,6 +21,14 @@ def load_data():
     return dataset
 
 
+def scale_per_channel(F, v_range=[-1, 1]):
+    vmin, vmax = v_range
+    fmin, fmax = F.min(axis=[2, 3]), F.max(axis=[2, 3])
+    F = vmin + (vmax - vmin) * (F - fmin.dimshuffle(0, 1, 'x', 'x')) / \
+        (fmax - fmin).dimshuffle(0, 1, 'x', 'x')
+    return F
+
+
 def train_model(dataset):
     X = T.tensor4()
     A = T.matrix()
@@ -33,16 +41,6 @@ def train_model(dataset):
         filter_shape=(32, 3, 5, 5),
         pool_shape=(2, 2),
         dropout_ratio=0.1,
-        active_func=actfuncs.tanh,
-        flatten=False
-    ))
-
-    filter_layers.append(ConvPoolLayer(
-        input=filter_layers[-1].output,
-        input_shape=filter_layers[-1].output_shape,
-        filter_shape=(64, 32, 5, 5),
-        pool_shape=(2, 2),
-        dropout_input=filter_layers[-1].dropout_output,
         active_func=actfuncs.tanh,
         flatten=False
     ))
@@ -64,12 +62,12 @@ def train_model(dataset):
         active_func=actfuncs.tanh
     ))
 
-    F = filter_layers[-1].output
+    F = scale_per_channel(filter_layers[-1].output)
     w = weight_layers[-1].output
     wF = (w.dimshuffle(0, 1, 'x', 'x') * F).sum(axis=1)
     wF = actfuncs.sigmoid(wF)
 
-    F_dropout = filter_layers[-1].dropout_output
+    F_dropout = scale_per_channel(filter_layers[-1].dropout_output)
     w_dropout = weight_layers[-1].dropout_output
     wF_dropout = (w_dropout.dimshuffle(0, 1, 'x', 'x') * F_dropout).sum(axis=1)
     wF_dropout = actfuncs.sigmoid(wF_dropout)
@@ -80,7 +78,7 @@ def train_model(dataset):
         1e-3 * model.get_norm(2)
     model.error = costfuncs.binerr(wF.flatten(2), S.flatten(2))
 
-    sgd.train(model, dataset, lr=5e-4, momentum=0.9,
+    sgd.train(model, dataset, lr=1e-3, momentum=0.9,
               batch_size=100, n_epochs=300,
               epoch_waiting=10)
 
