@@ -25,7 +25,7 @@ def load_model():
 
 
 def visualize(model, subset, folder):
-    if not os.isdir(folder):
+    if not os.path.isdir(folder):
         os.makedirs(folder)
 
     f = theano.function(
@@ -36,18 +36,20 @@ def visualize(model, subset, folder):
 
     X, __ = subset.input
 
-    input_shape = X.cpu_data[0].shape
+    __, height, width = X.cpu_data[0].shape
     output_shape = model.blocks[0].output_shape
 
-    fake_S = np.zeros(input_shape, dtype=theano.config.floatX)[np.newaxis]
+    fake_S = np.ones((100, height, width), dtype=theano.config.floatX)
+
+    y = f(X.cpu_data[0:100], fake_S)
 
     for i in xrange(100):
-        y = f(X.cpu_data[i:i + 1], fake_S).reshape(output_shape)
-        show_channels(y, n_cols=8, normalize=[-1, 1],
+        print 'Saving figure {0}'.format(i)
+        show_channels(y[i].reshape(output_shape), n_cols=8,
                       ofpath=os.path.join(folder, '{:04d}.png'.format(i)))
 
 
 if __name__ == '__main__':
     dataset = load_data()
     model = load_model()
-    visualize(model, dataset.test, 'filter_response')
+    visualize(model, dataset.test, 'filter_responses')
