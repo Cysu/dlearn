@@ -1,8 +1,6 @@
 import os
 import sys
 import cPickle
-import numpy as np
-import theano
 import theano.tensor as T
 
 homepath = os.path.join('..', '..')
@@ -26,7 +24,6 @@ def load_data():
 def train_model(dataset):
     X = T.tensor4()
     A = T.matrix()
-    S = T.tensor3()
 
     layers = []
     layers.append(ConvPoolLayer(
@@ -75,7 +72,7 @@ def train_model(dataset):
         active_func=actfuncs.sigmoid
     ))
 
-    model = NeuralNet(layers, [X, S], layers[-1].output)
+    model = NeuralNet(layers, X, layers[-1].output)
     model.target = A
     model.cost = costfuncs.binxent(layers[-1].dropout_output, A) + \
         1e-3 * model.get_norm(2)

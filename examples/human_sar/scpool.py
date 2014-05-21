@@ -1,8 +1,6 @@
 import os
 import sys
 import cPickle
-import numpy as np
-import theano
 import theano.tensor as T
 
 homepath = os.path.join('..', '..')
@@ -25,8 +23,7 @@ def load_data():
 
 def pooling(fmaps):
     s = fmaps.sum(axis=[2, 3])
-    # Z = T.nnet.sigmoid(fmaps).sum(axis=[2, 3])
-    Z = abs(T.tanh(fmaps)).sum(axis=[2, 3])
+    Z = abs(actfuncs.tanh(fmaps)).sum(axis=[2, 3])
     return s / Z
 
 
