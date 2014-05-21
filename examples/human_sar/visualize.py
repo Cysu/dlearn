@@ -1,6 +1,7 @@
 import os
 import sys
 import cPickle
+import numpy as np
 import theano
 
 homepath = os.path.join('..', '..')
@@ -8,7 +9,7 @@ homepath = os.path.join('..', '..')
 if not homepath in sys.path:
     sys.path.insert(0, homepath)
 
-import dlearn.visualization as vis
+from dlearn.visualization import show_channels
 
 
 def load_data():
@@ -23,27 +24,30 @@ def load_model():
     return model
 
 
-def visualize(model, subset):
-    # W = model.blocks[3]._W.get_value(borrow=True)[:, 0]
-    # W = W.reshape((128, 17, 7))
-    # vis.show_channels(W, n_cols=32)
+def visualize(model, subset, folder):
+    if not os.isdir(folder):
+        os.makedirs(folder)
 
     f = theano.function(
         inputs=model.input,
-        outputs=model.blocks[3].input,
+        outputs=model.blocks[0].output,
         on_unused_input='ignore'
     )
 
-    X, S = subset.input
+    X, __ = subset.input
+
+    input_shape = X.cpu_data[0].shape
+    output_shape = model.blocks[0].output_shape
+
+    fake_S = np.zeros(input_shape, dtype=theano.config.floatX)[np.newaxis]
+
     for i in xrange(100):
-        y = f(X.cpu_data[i:i + 1], S.cpu_data[i:i + 1])
-        # y = y.reshape(model.blocks[0].output_shape)
-        # y = y.reshape((128, 17, 7))
-        y = y.reshape((1, 16, 8))
-        vis.show_channels(y, n_cols=1, normalize=[-1, 1])
+        y = f(X.cpu_data[i:i + 1], fake_S).reshape(output_shape)
+        show_channels(y, n_cols=8, normalize=[-1, 1],
+                      ofpath=os.path.join(folder, '{:04d}.png'.format(i)))
 
 
 if __name__ == '__main__':
     dataset = load_data()
     model = load_model()
-    visualize(model, dataset.train)
+    visualize(model, dataset.test, 'filter_response')
