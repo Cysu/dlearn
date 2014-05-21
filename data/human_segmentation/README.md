@@ -24,11 +24,5 @@ Datasets
         </tr>
     </thead>
     <tbody>
-        <tr>
-            <td>CUHK_SAR</td>
-            <td>2368</td>
-            <td>8</td>
-            <td>Every consecutive pair of images belongs to the same person but is captured under different camera views.</td>
-        </tr>
     </tbody>
 <table>
