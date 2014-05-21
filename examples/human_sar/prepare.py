@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 import numpy as np
 
 homepath = os.path.join('..', '..')
@@ -10,23 +11,33 @@ if not homepath in sys.path:
 import conf_cuhk_sar as conf
 
 
+# Program arguments parser
+parser = argparse.ArgumentParser(description='Prepare the data')
+helptxt = """
+The input data. 'X' stands for image, 'A' stands for attribute, and 'S' stands
+for segmentation.
+"""
+parser.add_argument('-i', '--input', nargs='+', required=True,
+                    choices=['X', 'A', 'S'], help=helptxt)
+parser.add_argument('-t', '--target', nargs='+', required=True,
+                    choices=['X', 'A', 'S'], help=helptxt)
+
+args = parser.parse_args()
+
+
 def load_rawdata():
     from scipy.io import loadmat
 
     rawdata = []
     for dname in conf.datasets:
-        fpath_a = os.path.join(homepath, 'data', 'human_attribute', dname)
-        matdata_a = loadmat(fpath_a)
-
-        fpath_s = os.path.join(homepath, 'data', 'human_segmentation', dname)
-        matdata_s = loadmat(fpath_s)
-
-        m, n = matdata_a['images'].shape
+        fpath = os.path.join(homepath, 'data', 'human_sar', dname)
+        matdata = loadmat(fpath)
+        m, n = matdata['images'].shape
         for i in xrange(m):
             rawdata.append([
-                matdata_a['images'][i, 0],
-                matdata_a['attributes'][i, 0].ravel(),
-                matdata_s['segmentations'][i, 0]
+                matdata['images'][i, 0],
+                matdata['attributes'][i, 0].ravel(),
+                matdata['segmentations'][i, 0]
             ])
 
     return rawdata
@@ -41,20 +52,20 @@ def create_dataset(rawdata):
         img = np.rollaxis(img, 2)
         return (img / 100.0).astype(np.float32)
 
-    def choose_unival(attr, title):
-        ind = conf.unival_titles.index(title)
-        vals = conf.unival[ind]
-        ind = [conf.names.index(v) for v in vals]
+    def choose_attr_uni(attr, title):
+        ind = conf.attr_uni_titles.index(title)
+        vals = conf.attr_uni[ind]
+        ind = [conf.attr_names.index(v) for v in vals]
         return np.where(attr[ind] == 1)[0][0]
 
-    def choose_multival(attr, title):
-        ind = conf.multival_titles.index(title)
-        vals = conf.multival[ind]
-        ind = [conf.names.index(v) for v in vals]
+    def choose_attr_mul(attr, title):
+        ind = conf.attr_mul_titles.index(title)
+        vals = conf.attr_mul[ind]
+        ind = [conf.attr_names.index(v) for v in vals]
         return attr[ind].astype(np.float32)
 
-    def choose_segment(seg, title):
-        val = conf.segment_vals[title]
+    def choose_seg(seg, title):
+        val = conf.seg_pix[title]
         img = (seg == val).astype(np.float32)
         return img.astype(np.float32)
 
@@ -66,8 +77,8 @@ def create_dataset(rawdata):
     i = 0
     for (img, attr, seg) in rawdata:
         X[i] = imgprep(img)
-        A[i] = choose_multival(attr, 'Upper Body Colors')
-        S[i] = choose_segment(seg, 'Upper')
+        A[i] = choose_attr_mul(attr, 'Upper Body Colors')
+        S[i] = choose_seg(seg, 'Upper')
 
         # Mirror
         X[i + 1] = X[i][:, :, ::-1].copy()
@@ -82,7 +93,12 @@ def create_dataset(rawdata):
 
     X = X - X.mean(axis=0)
 
-    dataset = Dataset([X, S], A)
+    def parse_list(arglist):
+        d = {'X': X, 'A': A, 'S': S}
+        l = map(lambda x: d[x], arglist)
+        return l[0] if len(l) == 1 else l
+
+    dataset = Dataset(parse_list(args.input), parse_list(args.target))
     dataset.split(0.7, 0.2)
 
     return dataset

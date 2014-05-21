@@ -1,8 +1,10 @@
+# Datasets
 datasets = [
     'CUHK_SAR'
 ]
 
-names = [
+# Attributes
+attr_names = [
     'accessoryFaceMask',
     'accessoryHairBand',
     'accessoryHat',
@@ -104,13 +106,13 @@ names = [
     'upperBodyYellow'
 ]
 
-unival = [
+attr_uni = [
 ]
 
-unival_titles = [
+attr_uni_titles = [
 ]
 
-multival = [
+attr_mul = [
     [
         'hairBlack',
         'hairBrown',
@@ -236,7 +238,7 @@ multival = [
     ]
 ]
 
-multival_titles = [
+attr_mul_titles = [
     'Hair Color',
     'Hair Style',
     'Footwear Color',
@@ -251,7 +253,9 @@ multival_titles = [
     'Upper Body Styles'
 ]
 
-segment_vals = {
+
+# Segmentations
+seg_pix = {
     'Background': 0,
     'Hair': 9,
     'Head': 19,
@@ -261,4 +265,3 @@ segment_vals = {
     'Legs': 60,
     'Feet': 62
 }
-
