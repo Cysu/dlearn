@@ -60,6 +60,7 @@ def train_model(dataset):
         input_shape=layers[-1].output_shape,
         hidden_shape=[256, 128],
         dropout_input=layers[-1].dropout_output,
+        dropout_ratio=0.1,
         active_func=actfuncs.sigmoid
     )
 

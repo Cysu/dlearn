@@ -4,17 +4,19 @@ import theano.tensor as T
 
 from .block import Block
 from ..utils import actfuncs
-from ..utils.math import nprng
+from ..utils.math import nprng, dropout
 
 
 class AutoEncoder(Block):
 
     def __init__(self, input, input_shape, hidden_shape,
-                 dropout_input=None, active_func=None):
+                 dropout_input=None, dropout_ratio=None,
+                 active_func=None):
         super(AutoEncoder, self).__init__(input, dropout_input)
 
         self._input_shape = input_shape
         self._hidden_shape = hidden_shape
+        self._dropout_ratio = dropout_ratio
         self._active_func = active_func
 
         self._W = []
@@ -44,12 +46,17 @@ class AutoEncoder(Block):
 
         self._params = self._W + self._b + self._c
 
-        def f(x):
+        def f(x, is_training):
             z = x
             for W, b in zip(self._W, self._b):
                 z = T.dot(z, W) + b
                 if self._active_func is not None:
                     z = self._active_func(z)
+                if self._dropout_ratio is not None and self._dropout_ratio > 0:
+                    if is_training:
+                        z = dropout(z, self._dropout_ratio)
+                    else:
+                        z = (1.0 - self._dropout_ratio) * z                
 
             y = z
             for W, c in reversed(zip(self._W, self._c)):
@@ -59,9 +66,9 @@ class AutoEncoder(Block):
 
             return (z, y)
 
-        self._hidden_output, self._output = f(self._input)
+        self._hidden_output, self._output = f(self._input, False)
         self._dropout_hidden_output, self._dropout_output = \
-            f(self._dropout_input)
+            f(self._dropout_input, True)
 
     @property
     def input_shape(self):
