@@ -21,22 +21,22 @@ class AutoEncoder(Block):
         self._b = []
         self._c = []
         for i in xrange(len(self._hidden_shape)):
-            ishape = input_shape if i == 0 else hidden_shape[i - 1]
-            oshape = hidden_shape[i]
+            fan_in = input_shape if i == 0 else hidden_shape[i - 1]
+            fan_out = hidden_shape[i]
 
-            W_bound = np.sqrt(6.0 / (ishape + oshape))
+            W_bound = np.sqrt(6.0 / (fan_in + fan_out))
 
             if active_func == actfuncs.sigmoid:
                 W_bound *= 4
 
             init_W = np.asarray(
                 nprng.uniform(low=-W_bound, high=W_bound,
-                              size=(ishape, oshape)),
+                              size=(fan_in, fan_out)),
                 dtype=theano.config.floatX)
 
-            init_b = np.zeros(oshape, dtype=theano.config.floatX)
+            init_b = np.zeros(fan_out, dtype=theano.config.floatX)
 
-            init_c = np.zeros(oshape, dtype=theano.config.floatX)
+            init_c = np.zeros(fan_in, dtype=theano.config.floatX)
 
             self._W.append(theano.shared(value=init_W, borrow=True))
             self._b.append(theano.shared(value=init_b, borrow=True))

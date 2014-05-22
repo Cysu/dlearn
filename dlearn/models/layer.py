@@ -367,7 +367,7 @@ class LinearCombLayer(Block):
             self._W = W
 
         if b is None:
-            init_b = np.zeros(self._output_shape, dtype=theano.config.floatX)
+            init_b = np.zeros(self._input_shape[1:], dtype=theano.config.floatX)
 
             self._b = theano.shared(value=init_b, borrow=True)
         else:

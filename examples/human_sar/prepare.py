@@ -67,6 +67,7 @@ def create_dataset(rawdata):
     def choose_seg(seg, title):
         val = conf.seg_pix[title]
         img = (seg == val).astype(np.float32)
+        img = imgproc.resize(img, [37, 17])
         return img.astype(np.float32)
 
     m = len(rawdata)

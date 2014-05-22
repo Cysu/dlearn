@@ -65,9 +65,9 @@ def train_model(dataset):
 
     model = NeuralNet(layers + [ae], X, ae.output)
     model.target = S
-    model.cost = costfuncs.binxent(ae.dropout_output, S) + \
+    model.cost = costfuncs.binxent(ae.dropout_output, S.flatten(2)) + \
         1e-3 * model.get_norm(2)
-    model.error = costfuncs.binerr(ae.output, S)
+    model.error = costfuncs.binerr(ae.output, S.flatten(2))
 
     sgd.train(model, dataset, lr=1e-3, momentum=0.9,
               batch_size=100, n_epochs=300,
@@ -77,7 +77,7 @@ def train_model(dataset):
 
 
 def save_model(model):
-    with open('model_scpool.pkl', 'wb') as f:
+    with open('model_segcnn.pkl', 'wb') as f:
         cPickle.dump(model, f, cPickle.HIGHEST_PROTOCOL)
 
 
