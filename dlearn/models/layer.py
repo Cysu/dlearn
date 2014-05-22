@@ -217,7 +217,6 @@ class ConvPoolLayer(Block):
                  W=None, b=None):
         super(ConvPoolLayer, self).__init__(input, dropout_input)
 
-        self._input = input
         self._input_shape = input_shape
         self._filter_shape = filter_shape
         self._pool_shape = pool_shape if pool_shape is not None else (1, 1)
@@ -339,8 +338,7 @@ class LinearCombLayer(Block):
                  dropout_input=None, dropout_ratio=None,
                  active_func=None, flatten=False, W=None, b=None):
         super(LinearCombLayer, self).__init__(input, dropout_input)
-        
-        self._input = input
+
         self._input_shape = input_shape
         self._dropout_ratio = dropout_ratio
         self._active_func = active_func
