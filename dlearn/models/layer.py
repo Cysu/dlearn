@@ -71,7 +71,7 @@ class FullConnLayer(Block):
 
     def __init__(self, input, input_shape, output_shape,
                  dropout_input=None, dropout_ratio=None,
-                 active_func=None, W=None, b=None):
+                 active_func=None, W=None, b=None, const_params=False):
         super(FullConnLayer, self).__init__(input, dropout_input)
 
         if isinstance(input_shape, int):
@@ -114,7 +114,8 @@ class FullConnLayer(Block):
         else:
             self._b = b
 
-        self._params = [self._W, self._b]
+        if not const_params:
+            self._params = [self._W, self._b]
 
         # Compute output and dropout output
         def f(x):
@@ -214,7 +215,7 @@ class ConvPoolLayer(Block):
     def __init__(self, input, input_shape, filter_shape, pool_shape=None,
                  dropout_input=None, dropout_ratio=None,
                  active_func=None, flatten=False,
-                 W=None, b=None):
+                 W=None, b=None, const_params=False):
         super(ConvPoolLayer, self).__init__(input, dropout_input)
 
         self._input_shape = input_shape
@@ -261,10 +262,11 @@ class ConvPoolLayer(Block):
         else:
             self._b = b
 
-        if isinstance(self._b, float):
-            self._params = [self._W]
-        else:
-            self._params = [self._W, self._b]
+        if not const_params:
+            if isinstance(self._b, float):
+                self._params = [self._W]
+            else:
+                self._params = [self._W, self._b]
 
         # Compute output and dropout output
         def f(x):

@@ -154,3 +154,9 @@ def KL(target, output):
     kl = target * T.log(target / output) + \
         (1.0 - target) * T.log((1.0 - target) / (1.0 - output))
     return kl.sum(axis=1).mean()
+
+
+def weighted_norm2(output, target, weight):
+    x = (output - target) ** 2
+    w = (target + weight)
+    return (w * x).sum(axis=1).mean()

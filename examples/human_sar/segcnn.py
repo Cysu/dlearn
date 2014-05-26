@@ -1,6 +1,7 @@
 import os
 import sys
 import cPickle
+import numpy as np
 import theano.tensor as T
 
 homepath = os.path.join('..', '..')
@@ -22,10 +23,15 @@ def load_data():
 
 
 def load_attr_model():
-    with open('scpool.pkl', 'rb') as f:
+    with open('model_scpool.pkl', 'rb') as f:
         attr_model = cPickle.load(f)
 
     return attr_model
+
+def scale_per_channel(F):
+    fmin, fmax = F.min(axis=[2, 3]), F.max(axis=[2, 3])
+    return -1 + 2.0 * (F - fmin.dimshuffle(0, 1, 'x', 'x')) / \
+        (fmax - fmin).dimshuffle(0, 1, 'x', 'x')
 
 
 def train_model(dataset, attr_model):
@@ -35,14 +41,15 @@ def train_model(dataset, attr_model):
 
     layers = []
     layers.append(ConvPoolLayer(
-        input=X * S.dimshuffle(0, 'x', 1, 2),
+        input=X,
         input_shape=(3, 160, 80),
         filter_shape=(32, 3, 5, 5),
         pool_shape=(2, 2),
         active_func=actfuncs.tanh,
         flatten=False,
-        W=attr_model.blocks[0]._W,
-        b=attr_model.blocks[0]._b
+        # W=attr_model.blocks[0]._W,
+        # b=attr_model.blocks[0]._b,
+        # const_params=True
     ))
 
     layers.append(ConvPoolLayer(
@@ -51,15 +58,17 @@ def train_model(dataset, attr_model):
         filter_shape=(64, 32, 5, 5),
         pool_shape=(2, 2),
         active_func=actfuncs.tanh,
-        flatten=True,
-        W=attr_model.blocks[0]._W,
-        b=attr_model.blocks[0]._b
+        flatten=False,
+        # W=attr_model.blocks[1]._W,
+        # b=attr_model.blocks[1]._b,
+        # const_params=True
     ))
 
     layers.append(FullConnLayer(
-        input=layers[-1].output,
-        input_shape=layers[-1].output_shape,
-        output_shape=128,
+        # input=scale_per_channel(layers[-1].output).flatten(2),
+        input=layers[-1].output.flatten(2),
+        input_shape=np.prod(layers[-1].output_shape),
+        output_shape=1024,
         dropout_ratio=0.1,
         active_func=actfuncs.tanh
     ))
@@ -74,10 +83,16 @@ def train_model(dataset, attr_model):
 
     model = NeuralNet(layers, [X, A], layers[-1].output)
     model.target = S
+
+    '''
     model.cost = costfuncs.binxent(layers[-1].dropout_output, S.flatten(2)) + \
         1e-3 * model.get_norm(2)
     model.error = costfuncs.binerr(layers[-1].output, S.flatten(2))
-    model.consts = layers.blocks[0].parameters + layers.blocks[1].parameters
+    '''
+
+    model.cost = costfuncs.weighted_norm2(layers[-1].dropout_output, S.flatten(2), 1.0) + \
+                 1e-3 * model.get_norm(2)
+    model.error = costfuncs.weighted_norm2(layers[-1].output, S.flatten(2), 1.0)
 
     sgd.train(model, dataset, lr=1e-2, momentum=0.9,
               batch_size=100, n_epochs=300,
@@ -94,5 +109,5 @@ def save_model(model):
 if __name__ == '__main__':
     dataset = load_data()
     attr_model = load_attr_model()
-    model = train_model(dataset)
+    model = train_model(dataset, attr_model)
     save_model(model)
