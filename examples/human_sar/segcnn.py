@@ -65,7 +65,7 @@ def train_model(dataset, attr_model):
     ))
 
     layers.append(FullConnLayer(
-        input=scale_per_channel(layers[-1].output).flatten(2),
+        input=layers[-1].output.flatten(2),
         input_shape=np.prod(layers[-1].output_shape),
         output_shape=1024,
         dropout_ratio=0.1,

@@ -26,6 +26,7 @@ def proc_rawdata(rawdata):
     from dlearn.utils import imgproc
 
     def imgprep(img):
+        img = imgproc.resize(img, [160, 80], keep_ratio='height')
         img = imgproc.subtract_luminance(img)
         img = np.rollaxis(img, 2)
         return (img / 100.0).astype(np.float32)
