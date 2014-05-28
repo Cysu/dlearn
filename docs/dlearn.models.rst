@@ -4,6 +4,14 @@ dlearn.models package
 Submodules
 ----------
 
+dlearn.models.autoencoder module
+--------------------------------
+
+.. automodule:: dlearn.models.autoencoder
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 dlearn.models.block module
 --------------------------
 

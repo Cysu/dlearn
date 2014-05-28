@@ -187,6 +187,11 @@ class ConvPoolLayer(Block):
         The shape of each input sample. (n_channels, n_rows, n_cols).
     filter_shape : list/tuple of int
         The shape of the filters. (n_filters, n_channels, n_rows, n_cols).
+    border_mode : str, optional
+        Suppose the image size is :math:`m` and the filter size is :math:`n`. If
+        ``'valid'``, then the response size is :math:`m-n+1`. If ``'full'``,
+        then the response size is :math:`m+n-1`. Other modes are not supported.
+        Default is ``'valid'``.
     pool_shape : None or list/tuple of int, optional
         If None, then no max-pooling will be performed, otherwise the shape of
         the max-pooling region should be (n_rows, n_cols). Default if None.
@@ -212,22 +217,32 @@ class ConvPoolLayer(Block):
 
     """
 
-    def __init__(self, input, input_shape, filter_shape, pool_shape=None,
+    def __init__(self, input, input_shape, filter_shape, border_mode='valid',
+                 pool_shape=None,
                  dropout_input=None, dropout_ratio=None,
                  active_func=None, flatten=False,
                  W=None, b=None, const_params=False):
         super(ConvPoolLayer, self).__init__(input, dropout_input)
 
+        if border_mode not in ['valid', 'full']:
+            raise ValueError("border_mode value error")
+
         self._input_shape = input_shape
         self._filter_shape = filter_shape
+        self._border_mode = border_mode
         self._pool_shape = pool_shape if pool_shape is not None else (1, 1)
         self._dropout_ratio = dropout_ratio
         self._active_func = active_func
         self._flatten = flatten
 
         # Compute output shape
-        n_rows = (self._input_shape[-2] - self._filter_shape[-2] + 1)
-        n_cols = (self._input_shape[-1] - self._filter_shape[-1] + 1)
+        if self._border_mode == 'valid':
+            n_rows = (self._input_shape[-2] - self._filter_shape[-2] + 1)
+            n_cols = (self._input_shape[-1] - self._filter_shape[-1] + 1)
+        else:
+            n_rows = (self._input_shape[-2] + self._filter_shape[-2] - 1)
+            n_cols = (self._input_shape[-1] + self._filter_shape[-1] - 1)
+
         self._output_shape = (
             self._filter_shape[0],
             n_rows // self._pool_shape[0],
@@ -270,9 +285,14 @@ class ConvPoolLayer(Block):
 
         # Compute output and dropout output
         def f(x):
-            if not use_convnet or self._filter_shape[0] % 16 != 0:
+            satisfy_convnet = use_convnet and \
+                self._filter_shape[0] % 16 == 0 and \
+                self._border_mode == 'valid'
+
+            if not satisfy_convnet:
                 z = T.nnet.conv.conv2d(input=x, filters=self._W,
-                                       filter_shape=self._filter_shape)
+                                       filter_shape=self._filter_shape,
+                                       border_mode=self._border_mode)
             else:
                 conv_op = FilterActs(stride=1, partial_sum=1)
                 x = gpu_contiguous(x.dimshuffle(1, 2, 3, 0))
