@@ -37,7 +37,6 @@ def scale_per_channel(F):
 
 def train_model(dataset, attr_model):
     X = T.tensor4()
-    A = T.matrix()
     S = T.tensor3()
 
     layers = []
@@ -65,46 +64,23 @@ def train_model(dataset, attr_model):
         const_params=True
     ))
 
-    # layers.append(FullConnLayer(
-    #     input=scale_per_channel(layers[-1].output).flatten(2),
-    # input=layers[-1].output.flatten(2),
-    #     input_shape=np.prod(layers[-1].output_shape),
-    #     output_shape=1024,
-    #     dropout_ratio=0.1,
-    #     active_func=actfuncs.tanh
-    # ))
-
-    # layers.append(FullConnLayer(
-    #     input=layers[-1].output,
-    #     input_shape=layers[-1].output_shape,
-    #     output_shape=37 * 17,
-    #     dropout_input=layers[-1].dropout_output,
-    #     active_func=actfuncs.sigmoid
-    # ))
-
-    layers.append(ConvPoolLayer(
-        input=layers[-1].output,
-        input_shape=layers[-1].output_shape,
-        filter_shape=(128, 64, 3, 3),
-        border_mode='full',
-        pool_shape=None,
+    layers.append(FullConnLayer(
+        input=scale_per_channel(layers[-1].output).flatten(2),
+        input_shape=np.prod(layers[-1].output_shape),
+        output_shape=1024,
         dropout_ratio=0.1,
-        active_func=actfuncs.tanh,
-        flatten=False
+        active_func=actfuncs.tanh
     ))
 
-    layers.append(ConvPoolLayer(
+    layers.append(FullConnLayer(
         input=layers[-1].output,
         input_shape=layers[-1].output_shape,
-        filter_shape=(1, 128, 3, 3),
-        border_mode='valid',
-        pool_shape=None,
+        output_shape=37 * 17,
         dropout_input=layers[-1].dropout_output,
-        active_func=actfuncs.sigmoid,
-        flatten=True
+        active_func=actfuncs.sigmoid
     ))
 
-    model = NeuralNet(layers, [X, A], layers[-1].output)
+    model = NeuralNet(layers, X, layers[-1].output)
     model.target = S
 
     '''
