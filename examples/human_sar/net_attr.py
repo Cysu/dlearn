@@ -14,6 +14,7 @@ from dlearn.utils import actfuncs, costfuncs
 from dlearn.utils.serialize import load_data, save_data
 from dlearn.optimization import sgd
 
+
 # Program arguments parser
 desctxt = """
 Train attribute network with segmentation as ground truth. Use shape constrained
@@ -25,8 +26,8 @@ The input dataset data_name.pkl.
 """
 
 output_txt = """
-If not specified, the output model will be saved as model_net_attr.pkl.
-Otherwise it will be saved as model_net_attr_name.pkl.
+If not specified, the output model will be saved as model_attr.pkl.
+Otherwise it will be saved as model_attr_name.pkl.
 """
 
 parser = argparse.ArgumentParser(description=desctxt)
@@ -34,11 +35,12 @@ parser.add_argument('-d', '--dataset', nargs=1, required=True,
                     metavar='name', help=dataset_txt)
 parser.add_argument('-o', '--output', nargs='?', default=None,
                     metavar='name', help=output_txt)
+parser.add_argument('--no-scpool', action='store_true')
 
 args = parser.parse_args()
 
 
-def train_model():
+def train_model(dataset, use_scpool):
 
     def shape_constrained_pooling(fmaps):
         s = fmaps.sum(axis=[2, 3])
@@ -80,8 +82,11 @@ def train_model():
         b=0.0
     ))
 
+    F = shape_constrained_pooling(layers[-1].output) if use_scpool else \
+        layers[-1].output
+
     layers.append(FullConnLayer(
-        input=shape_constrained_pooling(layers[-1].output),
+        input=F,
         input_shape=layers[-1].output_shape[0],
         output_shape=64,
         dropout_ratio=0.1,
@@ -111,11 +116,11 @@ def train_model():
 
 if __name__ == '__main__':
     dataset_file = 'data_{0}.pkl'.format(args.dataset[0])
-    out_file = 'model_net_attr.pkl' if args.output is None else \
-               'model_net_attr_{0}.pkl'.format(args.output)
+    out_file = 'model_attr.pkl' if args.output is None else \
+               'model_attr_{0}.pkl'.format(args.output)
 
     dataset = load_data(dataset_file)
 
-    model = train_model(dataset)
+    model = train_model(dataset, not args.no_scpool)
 
     save_data(model, out_file)

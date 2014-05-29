@@ -26,26 +26,24 @@ The input dataset data_name.pkl.
 """
 
 attr_txt = """
-If not specified, the attribute model will be loaded as model_net_attr.pkl.
-Otherwise it will be loaded as model_net_attr_name.pkl.
+The attribute network model_name.pkl.
 """
 
 seg_txt = """
-If not specified, the segmentation model will be loaded as model_net_seg.pkl.
-Otherwise it will be loaded as model_net_seg_name.pkl.
+The segmentation network model_name.pkl.
 """
 
 output_txt = """
-If not specified, the output model will be saved as model_net_latent.pkl.
-Otherwise it will be saved as model_net_latent_name.pkl.
+If not specified, the output model will be saved as model_latent.pkl.
+Otherwise it will be saved as model_latent_name.pkl.
 """
 
 parser = argparse.ArgumentParser(description=desctxt)
 parser.add_argument('-d', '--dataset', nargs=1, required=True,
                     metavar='name', help=dataset_txt)
-parser.add_argument('-a', '--attribute', nargs='?', default=None,
+parser.add_argument('-a', '--attribute', nargs=1, required=True,
                     metavar='name', help=attr_txt)
-parser.add_argument('-s', '--segmentation', nargs='?', default=None,
+parser.add_argument('-s', '--segmentation', nargs=1, required=True,
                     metavar='name', help=seg_txt)
 parser.add_argument('-o', '--output', nargs='?', default=None,
                     metavar='name', help=output_txt)
@@ -169,12 +167,10 @@ def train_model(dataset, attr_model, seg_model):
 
 if __name__ == '__main__':
     dataset_file = 'data_{0}.pkl'.format(args.dataset[0])
-    attr_file = 'model_net_attr.pkl' if args.attribute is None else \
-                'model_net_attr_{0}.pkl'.format(args.attribute)
-    seg_file = 'model_net_seg.pkl' if args.segmentation is None else \
-               'model_net_seg_{0}.pkl'.format(args.segmentation)
-    out_file = 'model_net_latent.pkl' if args.output is None else \
-               'model_net_latent_{0}.pkl'.format(args.output)
+    attr_file = 'model_{0}.pkl'.format(args.attribute[0])
+    seg_file = 'model_{0}.pkl'.format(args.segmentation[0])
+    out_file = 'model_latent.pkl' if args.output is None else \
+               'model_latent_{0}.pkl'.format(args.output)
 
     dataset = load_data(dataset_file)
     attr_model = load_data(attr_file)
