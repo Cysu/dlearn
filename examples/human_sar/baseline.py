@@ -15,7 +15,7 @@ from dlearn.optimization import sgd
 
 
 def load_data():
-    with open('data.pkl', 'rb') as f:
+    with open('data_attribute.pkl', 'rb') as f:
         dataset = cPickle.load(f)
 
     return dataset
@@ -86,7 +86,7 @@ def train_model(dataset):
 
 
 def save_model(model):
-    with open('model_baseline.pkl', 'wb') as f:
+    with open('model_baseline_attribute.pkl', 'wb') as f:
         cPickle.dump(model, f, cPickle.HIGHEST_PROTOCOL)
 
 

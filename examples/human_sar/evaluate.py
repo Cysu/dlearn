@@ -18,7 +18,7 @@ mdname = sys.argv[1]
 
 
 def load_data():
-    with open('data.pkl', 'rb') as f:
+    with open('data_attribute.pkl', 'rb') as f:
         dataset = cPickle.load(f)
     return dataset
 
@@ -30,13 +30,20 @@ def load_model():
 
 
 def compute_output(model, subset):
-    f = theano.function(
-        inputs=model.input,
-        outputs=model.output,
-        on_unused_input='ignore'
-    )
-
-    X, S = subset.input
+    if isinstance(subset.input, list):
+        X, S = subset.input
+        f = theano.function(
+            inputs=model.input,
+            outputs=model.output,
+            on_unused_input='ignore'
+        )
+    else:
+        X = subset.input
+        f = theano.function(
+            inputs=[model.input],
+            outputs=model.output,
+            on_unused_input='ignore'
+        )
 
     m = X.cpu_data.shape[0]
 
@@ -44,9 +51,13 @@ def compute_output(model, subset):
     n_batches = (m - 1) // batch_size + 1
 
     output = []
-    for i in xrange(n_batches):
-        output.append(f(X.cpu_data[i * batch_size: (i + 1) * batch_size],
-                        S.cpu_data[i * batch_size: (i + 1) * batch_size]))
+    if isinstance(subset.input, list):
+        for i in xrange(n_batches):
+            output.append(f(X.cpu_data[i * batch_size: (i + 1) * batch_size],
+                            S.cpu_data[i * batch_size: (i + 1) * batch_size]))
+    else:
+        for i in xrange(n_batches):
+            output.append(f(X.cpu_data[i * batch_size: (i + 1) * batch_size]))
     output = np.vstack(output)
 
     return output
@@ -92,10 +103,10 @@ def show_stats(ret):
 
 
 if __name__ == '__main__':
-    # dataset = load_data()
-    # model = load_model()
-    # output = compute_output(model, dataset.test)
-    # ret = compute_stats(output, dataset.test.target.cpu_data)
-    # save_stats(ret)
+    dataset = load_data()
+    model = load_model()
+    output = compute_output(model, dataset.test)
+    ret = compute_stats(output, dataset.test.target.cpu_data)
+    save_stats(ret)
     ret = load_stats()
     show_stats(ret)

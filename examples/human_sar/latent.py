@@ -75,7 +75,9 @@ def train_model(dataset, attr_model, seg_model):
         input_shape=np.prod(feature_layers[-1].output_shape),
         output_shape=1024,
         dropout_ratio=0.1,
-        active_func=actfuncs.tanh
+        active_func=actfuncs.tanh,
+        W=seg_model.blocks[2]._W,
+        b=seg_model.blocks[2]._b
     ))
 
     seg_layers.append(FullConnLayer(
@@ -83,16 +85,18 @@ def train_model(dataset, attr_model, seg_model):
         input_shape=seg_layers[-1].output_shape,
         output_shape=37 * 17,
         dropout_input=seg_layers[-1].dropout_output,
-        active_func=actfuncs.sigmoid
+        active_func=actfuncs.sigmoid,
+        W=seg_model.blocks[3]._W,
+        b=seg_model.blocks[3]._b
     ))
 
     S = seg_layers[-1].output
-    S = S * (S >= 0.5)
+    S = S * (S >= 0.1)
     S = S.reshape((S.shape[0], 37, 17))
     S = S.dimshuffle(0, 'x', 1, 2)
 
     S_dropout = seg_layers[-1].dropout_output
-    S_dropout = S_dropout * (S_dropout >= 0.5)
+    S_dropout = S_dropout * (S_dropout >= 0.1)
     S_dropout = S_dropout.reshape((S_dropout.shape[0], 37, 17))
     S_dropout = S_dropout.dimshuffle(0, 'x', 1, 2)
 
@@ -113,7 +117,7 @@ def train_model(dataset, attr_model, seg_model):
         input=pooling(attr_layers[-1].output),
         input_shape=attr_layers[-1].output_shape[0],
         output_shape=64,
-        dropout_input=attr_layers[-1].dropout_output,
+        dropout_input=pooling(attr_layers[-1].dropout_output),
         dropout_ratio=0.1,
         active_func=actfuncs.tanh,
         W=attr_model.blocks[3]._W,
@@ -138,7 +142,7 @@ def train_model(dataset, attr_model, seg_model):
         1e-3 * model.get_norm(2)
     model.error = costfuncs.binerr(attr_layers[-1].output, A)
 
-    sgd.train(model, dataset, lr=1e-2, momentum=0.9,
+    sgd.train(model, dataset, lr=1e-3, momentum=0.9,
               batch_size=100, n_epochs=300,
               epoch_waiting=10)
 

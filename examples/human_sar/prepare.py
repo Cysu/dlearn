@@ -29,7 +29,7 @@ def load_rawdata():
     from scipy.io import loadmat
 
     rawdata = []
-    for dname in conf.datasets:
+    for dname in ['Mix_SAR']:
         fpath = os.path.join(homepath, 'data', 'human_sar', dname)
         matdata = loadmat(fpath)
         m, n = matdata['images'].shape
@@ -48,6 +48,7 @@ def create_dataset(rawdata):
     from dlearn.utils import imgproc
 
     def imgprep(img):
+        img = imgproc.resize(img, [160, 80], keep_ratio='height')
         img = imgproc.subtract_luminance(img)
         img = np.rollaxis(img, 2)
         return (img / 100.0).astype(np.float32)
@@ -108,7 +109,7 @@ def create_dataset(rawdata):
 def save_dataset(dataset):
     import cPickle
 
-    with open('data.pkl', 'wb') as f:
+    with open('data_mix.pkl', 'wb') as f:
         cPickle.dump(dataset, f, cPickle.HIGHEST_PROTOCOL)
 
 
