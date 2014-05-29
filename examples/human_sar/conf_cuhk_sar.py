@@ -1,8 +1,3 @@
-# Datasets
-datasets = [
-    'CUHK_SAR'
-]
-
 # Attributes
 attr_names = [
     'accessoryFaceMask',

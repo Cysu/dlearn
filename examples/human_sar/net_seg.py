@@ -1,6 +1,6 @@
 import os
 import sys
-import cPickle
+import argparse
 import numpy as np
 import theano.tensor as T
 
@@ -12,27 +12,38 @@ if not homepath in sys.path:
 from dlearn.models.layer import FullConnLayer, ConvPoolLayer
 from dlearn.models.nnet import NeuralNet
 from dlearn.utils import actfuncs, costfuncs
+from dlearn.utils.serialize import load_data, save_data
 from dlearn.optimization import sgd
 
 
-def load_data():
-    with open('data.pkl', 'rb') as f:
-        dataset = cPickle.load(f)
+# Program arguments parser
+desctxt = """
+Train segmentation network. Use filters learned from attribute network.
+"""
 
-    return dataset
+dataset_txt = """
+The input dataset data_name.pkl.
+"""
 
+attr_txt = """
+If not specified, the attribute model will be loaded as model_net_attr.pkl.
+Otherwise it will be loaded as model_net_attr_name.pkl.
+"""
 
-def load_attr_model():
-    with open('model_scpool.pkl', 'rb') as f:
-        attr_model = cPickle.load(f)
+output_txt = """
+If not specified, the output model will be saved as model_net_seg.pkl.
+Otherwise it will be saved as model_net_seg_name.pkl.
+"""
 
-    return attr_model
+parser = argparse.ArgumentParser(description=desctxt)
+parser.add_argument('-d', '--dataset', nargs=1, required=True,
+                    metavar='name', help=dataset_txt)
+parser.add_argument('-a', '--attribute', nargs='?', default=None,
+                    metavar='name', help=attr_txt)
+parser.add_argument('-o', '--output', nargs='?', default=None,
+                    metavar='name', help=output_txt)
 
-
-def scale_per_channel(F):
-    fmin, fmax = F.min(axis=[2, 3]), F.max(axis=[2, 3])
-    return -1 + 2.0 * (F - fmin.dimshuffle(0, 1, 'x', 'x')) / \
-        (fmax - fmin).dimshuffle(0, 1, 'x', 'x')
+args = parser.parse_args()
 
 
 def train_model(dataset, attr_model):
@@ -102,13 +113,16 @@ def train_model(dataset, attr_model):
     return model
 
 
-def save_model(model):
-    with open('model_segcnn.pkl', 'wb') as f:
-        cPickle.dump(model, f, cPickle.HIGHEST_PROTOCOL)
-
-
 if __name__ == '__main__':
-    dataset = load_data()
-    attr_model = load_attr_model()
+    dataset_file = 'data_{0}.pkl'.format(args.dataset[0])
+    attr_file = 'model_net_attr.pkl' if args.attribute is None else \
+                'model_net_attr_{0}.pkl'.format(args.attribute)
+    out_file = 'model_net_seg.pkl' if args.output is None else \
+               'model_net_seg_{0}.pkl'.format(args.output)
+
+    dataset = load_data(dataset_file)
+    attr_model = load_data(attr_file)
+
     model = train_model(dataset, attr_model)
-    save_model(model)
+
+    save_data(model, out_file)

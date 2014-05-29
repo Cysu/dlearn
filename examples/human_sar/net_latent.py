@@ -1,6 +1,6 @@
 import os
 import sys
-import cPickle
+import argparse
 import numpy as np
 import theano.tensor as T
 
@@ -12,37 +12,54 @@ if not homepath in sys.path:
 from dlearn.models.layer import FullConnLayer, ConvPoolLayer
 from dlearn.models.nnet import NeuralNet
 from dlearn.utils import actfuncs, costfuncs
+from dlearn.utils.serialize import load_data, save_data
 from dlearn.optimization import sgd
 
 
-def load_data():
-    with open('data_attribute.pkl', 'rb') as f:
-        dataset = cPickle.load(f)
+# Program arguments parser
+desctxt = """
+Train latent network. Use learned attribute and segmentation network.
+"""
 
-    return dataset
+dataset_txt = """
+The input dataset data_name.pkl.
+"""
 
+attr_txt = """
+If not specified, the attribute model will be loaded as model_net_attr.pkl.
+Otherwise it will be loaded as model_net_attr_name.pkl.
+"""
 
-def load_attr_model():
-    with open('model_scpool.pkl', 'rb') as f:
-        attr_model = cPickle.load(f)
+seg_txt = """
+If not specified, the segmentation model will be loaded as model_net_seg.pkl.
+Otherwise it will be loaded as model_net_seg_name.pkl.
+"""
 
-    return attr_model
+output_txt = """
+If not specified, the output model will be saved as model_net_latent.pkl.
+Otherwise it will be saved as model_net_latent_name.pkl.
+"""
 
+parser = argparse.ArgumentParser(description=desctxt)
+parser.add_argument('-d', '--dataset', nargs=1, required=True,
+                    metavar='name', help=dataset_txt)
+parser.add_argument('-a', '--attribute', nargs='?', default=None,
+                    metavar='name', help=attr_txt)
+parser.add_argument('-s', '--segmentation', nargs='?', default=None,
+                    metavar='name', help=seg_txt)
+parser.add_argument('-o', '--output', nargs='?', default=None,
+                    metavar='name', help=output_txt)
 
-def load_seg_model():
-    with open('model_segcnn.pkl', 'rb') as f:
-        seg_model = cPickle.load(f)
-
-    return seg_model
-
-
-def pooling(fmaps):
-    s = fmaps.sum(axis=[2, 3])
-    Z = abs(actfuncs.tanh(fmaps)).sum(axis=[2, 3])
-    return s / Z
+args = parser.parse_args()
 
 
 def train_model(dataset, attr_model, seg_model):
+
+    def shape_constrained_pooling(fmaps):
+        s = fmaps.sum(axis=[2, 3])
+        Z = abs(actfuncs.tanh(fmaps)).sum(axis=[2, 3])
+        return s / Z
+
     X = T.tensor4()
     A = T.matrix()
 
@@ -114,10 +131,11 @@ def train_model(dataset, attr_model, seg_model):
     ))
 
     attr_layers.append(FullConnLayer(
-        input=pooling(attr_layers[-1].output),
+        input=shape_constrained_pooling(attr_layers[-1].output),
         input_shape=attr_layers[-1].output_shape[0],
         output_shape=64,
-        dropout_input=pooling(attr_layers[-1].dropout_output),
+        dropout_input=shape_constrained_pooling(
+            attr_layers[-1].dropout_output),
         dropout_ratio=0.1,
         active_func=actfuncs.tanh,
         W=attr_model.blocks[3]._W,
@@ -149,15 +167,19 @@ def train_model(dataset, attr_model, seg_model):
     return model
 
 
-def save_model(model):
-    with open('model_latent.pkl', 'wb') as f:
-        cPickle.dump(model, f, cPickle.HIGHEST_PROTOCOL)
-
-
 if __name__ == '__main__':
-    dataset = load_data()
-    attr_model = load_attr_model()
-    seg_model = load_seg_model()
+    dataset_file = 'data_{0}.pkl'.format(args.dataset[0])
+    attr_file = 'model_net_attr.pkl' if args.attribute is None else \
+                'model_net_attr_{0}.pkl'.format(args.attribute)
+    seg_file = 'model_net_seg.pkl' if args.segmentation is None else \
+               'model_net_seg_{0}.pkl'.format(args.segmentation)
+    out_file = 'model_net_latent.pkl' if args.output is None else \
+               'model_net_latent_{0}.pkl'.format(args.output)
+
+    dataset = load_data(dataset_file)
+    attr_model = load_data(attr_file)
+    seg_model = load_data(seg_file)
 
     model = train_model(dataset, attr_model, seg_model)
-    save_model(model)
+
+    save_data(model, out_file)

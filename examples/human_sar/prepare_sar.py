@@ -10,26 +10,35 @@ if not homepath in sys.path:
 
 import conf_cuhk_sar as conf
 
-
 # Program arguments parser
-parser = argparse.ArgumentParser(description='Prepare the data')
-helptxt = """
+data_txt = """
 The input data. 'X' stands for image, 'A' stands for attribute, and 'S' stands
 for segmentation.
 """
+
+output_txt = """
+If not specified, the output data will be saved as data_sar.pkl.
+Otherwise it will be saved as data_sar_name.pkl.
+"""
+
+parser = argparse.ArgumentParser(description='Prepare the data')
+parser.add_argument('-d', '--dataset', nargs='+', required=True,
+                    choices=['Mix_SAR', 'CUHK_SAR'])
 parser.add_argument('-i', '--input', nargs='+', required=True,
-                    choices=['X', 'A', 'S'], help=helptxt)
+                    choices=['X', 'A', 'S'], help=data_txt)
 parser.add_argument('-t', '--target', nargs='+', required=True,
-                    choices=['X', 'A', 'S'], help=helptxt)
+                    choices=['X', 'A', 'S'], help=data_txt)
+parser.add_argument('-o', '--output', nargs='?', default=None,
+                    metavar='name', help=output_txt)
 
 args = parser.parse_args()
 
 
-def load_rawdata():
+def load_rawdata(dnames):
     from scipy.io import loadmat
 
     rawdata = []
-    for dname in ['Mix_SAR']:
+    for dname in dnames:
         fpath = os.path.join(homepath, 'data', 'human_sar', dname)
         matdata = loadmat(fpath)
         m, n = matdata['images'].shape
@@ -48,7 +57,8 @@ def create_dataset(rawdata):
     from dlearn.utils import imgproc
 
     def imgprep(img):
-        img = imgproc.resize(img, [160, 80], keep_ratio='height')
+        if img.shape != (160, 80):
+            img = imgproc.resize(img, [160, 80], keep_ratio='height')
         img = imgproc.subtract_luminance(img)
         img = np.rollaxis(img, 2)
         return (img / 100.0).astype(np.float32)
@@ -106,14 +116,17 @@ def create_dataset(rawdata):
     return dataset
 
 
-def save_dataset(dataset):
+def save_dataset(dataset, fpath):
     import cPickle
 
-    with open('data_mix.pkl', 'wb') as f:
+    with open(fpath, 'wb') as f:
         cPickle.dump(dataset, f, cPickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == '__main__':
-    rawdata = load_rawdata()
+    rawdata = load_rawdata(args.dataset)
     dataset = create_dataset(rawdata)
-    save_dataset(dataset)
+
+    out_file = 'data_sar.pkl' if args.output is None else \
+               'data_sar_{0}.pkl'.format(args.output)
+    save_dataset(dataset, out_file)

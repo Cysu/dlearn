@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 import numpy as np
 
 homepath = os.path.join('..', '..')
@@ -9,12 +10,26 @@ if not homepath in sys.path:
 
 import conf_cuhk_sar as conf
 
+# Program arguments parser
+output_txt = """
+If not specified, the output data will be saved as data_attribute.pkl.
+Otherwise it will be saved as data_attribute_name.pkl.
+"""
 
-def load_rawdata():
+parser = argparse.ArgumentParser(description='Prepare the data')
+parser.add_argument('-d', '--dataset', nargs='+', required=True,
+                    choices=['Mix'])
+parser.add_argument('-o', '--output', nargs='?', default=None,
+                    metavar='name', help=output_txt)
+
+args = parser.parse_args()
+
+
+def load_rawdata(dnames):
     from scipy.io import loadmat
 
     rawdata = []
-    for dname in ['Mix']:
+    for dname in dnames:
         fpath = os.path.join(homepath, 'data', 'human_attribute', dname)
         matdata = loadmat(fpath)
         m, n = matdata['images'].shape
@@ -70,14 +85,18 @@ def create_dataset(rawdata):
     return dataset
 
 
-def save_dataset(dataset):
+def save_dataset(dataset, fpath):
     import cPickle
 
-    with open('data_attribute.pkl', 'wb') as f:
+    with open(fpath, 'wb') as f:
         cPickle.dump(dataset, f, cPickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == '__main__':
-    rawdata = load_rawdata()
+    rawdata = load_rawdata(args.dataset)
     dataset = create_dataset(rawdata)
-    save_dataset(dataset)
+
+    out_file = 'data_attribute.pkl' if args.output is None else \
+               'data_attribute_{0}.pkl'.format(args.output)
+
+    save_dataset(dataset, out_file)

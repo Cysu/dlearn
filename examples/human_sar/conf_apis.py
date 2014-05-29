@@ -1,7 +1,3 @@
-datasets = [
-    'APiS'
-]
-
 names = [
     'TshirtNo',
     'TshirtYes',

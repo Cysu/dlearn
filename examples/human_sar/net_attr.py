@@ -1,6 +1,6 @@
 import os
 import sys
-import cPickle
+import argparse
 import theano.tensor as T
 
 homepath = os.path.join('..', '..')
@@ -11,23 +11,40 @@ if not homepath in sys.path:
 from dlearn.models.layer import FullConnLayer, ConvPoolLayer
 from dlearn.models.nnet import NeuralNet
 from dlearn.utils import actfuncs, costfuncs
+from dlearn.utils.serialize import load_data, save_data
 from dlearn.optimization import sgd
 
+# Program arguments parser
+desctxt = """
+Train attribute network with segmentation as ground truth. Use shape constrained
+pooling.
+"""
 
-def load_data():
-    with open('data.pkl', 'rb') as f:
-        dataset = cPickle.load(f)
+dataset_txt = """
+The input dataset data_name.pkl.
+"""
 
-    return dataset
+output_txt = """
+If not specified, the output model will be saved as model_net_attr.pkl.
+Otherwise it will be saved as model_net_attr_name.pkl.
+"""
+
+parser = argparse.ArgumentParser(description=desctxt)
+parser.add_argument('-d', '--dataset', nargs=1, required=True,
+                    metavar='name', help=dataset_txt)
+parser.add_argument('-o', '--output', nargs='?', default=None,
+                    metavar='name', help=output_txt)
+
+args = parser.parse_args()
 
 
-def pooling(fmaps):
-    s = fmaps.sum(axis=[2, 3])
-    Z = abs(actfuncs.tanh(fmaps)).sum(axis=[2, 3])
-    return s / Z
+def train_model():
 
+    def shape_constrained_pooling(fmaps):
+        s = fmaps.sum(axis=[2, 3])
+        Z = abs(actfuncs.tanh(fmaps)).sum(axis=[2, 3])
+        return s / Z
 
-def train_model(dataset):
     X = T.tensor4()
     A = T.matrix()
     S = T.tensor3()
@@ -63,10 +80,8 @@ def train_model(dataset):
         b=0.0
     ))
 
-    F = pooling(layers[-1].output)
-
     layers.append(FullConnLayer(
-        input=F,
+        input=shape_constrained_pooling(layers[-1].output),
         input_shape=layers[-1].output_shape[0],
         output_shape=64,
         dropout_ratio=0.1,
@@ -94,12 +109,13 @@ def train_model(dataset):
     return model
 
 
-def save_model(model):
-    with open('model_scpool.pkl', 'wb') as f:
-        cPickle.dump(model, f, cPickle.HIGHEST_PROTOCOL)
-
-
 if __name__ == '__main__':
-    dataset = load_data()
+    dataset_file = 'data_{0}.pkl'.format(args.dataset[0])
+    out_file = 'model_net_attr.pkl' if args.output is None else \
+               'model_net_attr_{0}.pkl'.format(args.output)
+
+    dataset = load_data(dataset_file)
+
     model = train_model(dataset)
-    save_model(model)
+
+    save_data(model, out_file)

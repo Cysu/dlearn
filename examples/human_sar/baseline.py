@@ -1,6 +1,6 @@
 import os
 import sys
-import cPickle
+import argparse
 import theano.tensor as T
 
 homepath = os.path.join('..', '..')
@@ -11,14 +11,27 @@ if not homepath in sys.path:
 from dlearn.models.layer import FullConnLayer, ConvPoolLayer
 from dlearn.models.nnet import NeuralNet
 from dlearn.utils import actfuncs, costfuncs
+from dlearn.utils.serialize import load_data, save_data
 from dlearn.optimization import sgd
 
 
-def load_data():
-    with open('data_attribute.pkl', 'rb') as f:
-        dataset = cPickle.load(f)
+# Program arguments parser
+dataset_txt = """
+The input dataset data_name.pkl.
+"""
 
-    return dataset
+output_txt = """
+If not specified, the output model will be saved as model_baseline.pkl.
+Otherwise it will be saved as model_baseline_name.pkl.
+"""
+
+parser = argparse.ArgumentParser(description='Run the baseline CNN')
+parser.add_argument('-d', '--dataset', nargs=1, required=True,
+                    metavar='name', help=dataset_txt)
+parser.add_argument('-o', '--output', nargs='?', default=None,
+                    metavar='name', help=output_txt)
+
+args = parser.parse_args()
 
 
 def train_model(dataset):
@@ -78,19 +91,20 @@ def train_model(dataset):
         1e-3 * model.get_norm(2)
     model.error = costfuncs.binerr(layers[-1].output, A)
 
-    sgd.train(model, dataset, lr=1e-3, momentum=0.9,
+    sgd.train(model, dataset, lr=1e-2, momentum=0.9,
               batch_size=100, n_epochs=300,
               epoch_waiting=10)
 
     return model
 
 
-def save_model(model):
-    with open('model_baseline_attribute.pkl', 'wb') as f:
-        cPickle.dump(model, f, cPickle.HIGHEST_PROTOCOL)
-
-
 if __name__ == '__main__':
-    dataset = load_data()
+    dataset_file = 'data_{0}.pkl'.format(args.dataset[0])
+    out_file = 'model_baseline.pkl' if args.output is None else \
+               'model_baseline_{0}.pkl'.format(args.output)
+
+    dataset = load_data(dataset_file)
+
     model = train_model(dataset)
-    save_model(model)
+
+    save_data(model, out_file)
