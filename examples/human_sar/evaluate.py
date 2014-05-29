@@ -1,6 +1,6 @@
 import os
 import sys
-import cPickle
+import argparse
 import numpy as np
 import theano
 
@@ -10,23 +10,37 @@ if not homepath in sys.path:
     sys.path.insert(0, homepath)
 
 import dlearn.stats as stats
+from dlearn.utils.serialize import load_data, save_data
 
 
-if len(sys.argv) != 2:
-    sys.exit('{0} method_name'.format(sys.argv[0]))
-mdname = sys.argv[1]
+# Program arguments parser
+desctxt = """
+Train latent network. Use learned attribute and segmentation network.
+"""
 
+dataset_txt = """
+The input dataset data_name.pkl.
+"""
 
-def load_data():
-    with open('data_attribute.pkl', 'rb') as f:
-        dataset = cPickle.load(f)
-    return dataset
+model_txt = """
+The model model_name.pkl.
+"""
 
+output_txt = """
+If not specified, the output stats will be saved as stats.pkl.
+Otherwise it will be saved as stats_name.pkl.
+"""
 
-def load_model():
-    with open('model_{0}.pkl'.format(mdname), 'rb') as f:
-        model = cPickle.load(f)
-    return model
+parser = argparse.ArgumentParser(description=desctxt)
+parser.add_argument('-d', '--dataset', nargs=1, required=True,
+                    metavar='name', help=dataset_txt)
+parser.add_argument('-m', '--model', nargs=1, required=True,
+                    metavar='name', help=model_txt)
+parser.add_argument('-o', '--output', nargs='?', default=None,
+                    metavar='name', help=output_txt)
+parser.add_argument('--display-only', action='store_true')
+
+args = parser.parse_args()
 
 
 def compute_output(model, subset):
@@ -76,17 +90,6 @@ def compute_stats(output, target):
     return ret
 
 
-def save_stats(ret):
-    with open('stats_{0}.pkl'.format(mdname), 'wb') as f:
-        cPickle.dump(ret, f, cPickle.HIGHEST_PROTOCOL)
-
-
-def load_stats():
-    with open('stats_{0}.pkl'.format(mdname), 'rb') as f:
-        ret = cPickle.load(f)
-    return ret
-
-
 def show_stats(ret):
     import matplotlib.pyplot as plt
 
@@ -103,10 +106,19 @@ def show_stats(ret):
 
 
 if __name__ == '__main__':
-    dataset = load_data()
-    model = load_model()
-    output = compute_output(model, dataset.test)
-    ret = compute_stats(output, dataset.test.target.cpu_data)
-    save_stats(ret)
-    ret = load_stats()
+    dataset_file = 'data_{0}.pkl'.format(args.dataset[0])
+    model_file = 'model_{0}.pkl'.format(args.model[0])
+    out_file = 'stats.pkl' if args.output is None else \
+               'stats_{0}.pkl'.format(args.output)
+
+    if not args.display_only:
+        dataset = load_data(dataset_file)
+        model = load_data(model_file)
+
+        output = compute_output(model, dataset.test)
+        ret = compute_stats(output, dataset.test.target.cpu_data)
+
+        save_data(ret, out_file)
+
+    ret = load_data(out_file)
     show_stats(ret)

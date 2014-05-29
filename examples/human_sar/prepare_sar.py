@@ -39,7 +39,7 @@ def load_rawdata(dnames):
 
     rawdata = []
     for dname in dnames:
-        fpath = os.path.join(homepath, 'data', 'human_sar', dname)
+        fpath = os.path.join(homepath, 'data', 'human_sar', dname + '.mat')
         matdata = loadmat(fpath)
         m, n = matdata['images'].shape
         for i in xrange(m):
