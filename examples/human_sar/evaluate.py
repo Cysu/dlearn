@@ -98,7 +98,7 @@ def show_stats(ret):
 
     for j, (auc, fpr, tpr, thresh) in enumerate(ret):
         # Plot stats
-        plt.subplot(n_rows, n_cols, j)
+        plt.subplot(n_rows, n_cols, j + 1)
         plt.plot(fpr, tpr)
         plt.title('AUC = {:.2f}%'.format(auc * 100))
 

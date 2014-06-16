@@ -60,8 +60,8 @@ class Dataset(object):
         samples. Otherwise, multiple categories of target data form a list of
         numpy.ndarray. *Read-only*.
 
-    train, valid, test : Anonymous
-        These are Anonymous objects for training, validation, and testing data.
+    train, valid, test : Wrapper
+        These are Wrapper objects for training, validation, and testing data.
         Each contains three fields: input, target, and index. Field input is a
         subset of the whole input data; field target is a subset of the whole
         target data; field index is a numpy vector storing the index of subset

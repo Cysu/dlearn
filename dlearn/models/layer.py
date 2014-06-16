@@ -1,6 +1,7 @@
 import numpy as np
 import theano
 import theano.tensor as T
+from theano.tensor.signal.downsample import max_pool_2d
 
 try:
     from theano.sandbox.cuda.basic_ops import gpu_contiguous
@@ -300,7 +301,7 @@ class ConvPoolLayer(Block):
                 z = conv_op(x, W).dimshuffle(3, 0, 1, 2)
 
             if self._pool_shape != (1, 1):
-                z = T.signal.downsample.max_pool_2d(
+                z = max_pool_2d(
                     input=z, ds=self._pool_shape,
                     ignore_border=True)
 

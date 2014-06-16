@@ -103,6 +103,11 @@ def create_dataset(rawdata):
     A = np.asarray(A)
     S = np.asarray(S)
 
+    Xm = X.mean(axis=0)
+    import cPickle
+    with open('mean.pkl', 'wb') as f:
+        cPickle.dump(Xm, f, cPickle.HIGHEST_PROTOCOL)
+
     X = X - X.mean(axis=0)
 
     def parse_list(arglist):

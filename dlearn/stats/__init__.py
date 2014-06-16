@@ -120,6 +120,7 @@ def roc(predict, gtruth):
 
     fpr = fp / n_neg
     tpr = tp / n_pos
+
     thresh = np.insert(predict, 0, 0)
 
     return (fpr[::-1], tpr[::-1], thresh[::-1])
