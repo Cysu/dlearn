@@ -36,6 +36,14 @@ dlearn.utils.math module
     :undoc-members:
     :show-inheritance:
 
+dlearn.utils.serialize module
+-----------------------------
+
+.. automodule:: dlearn.utils.serialize
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------
