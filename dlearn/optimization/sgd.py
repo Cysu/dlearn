@@ -32,7 +32,7 @@ def _bind_data(model, subset, irange):
 
 
 def train(model, dataset, lr=1e-4, momentum=0.9,
-          batch_size=100, n_epochs=100,
+          batch_size=100, n_epochs=100, valid_freq=None,
           patience_incr=2.0, lr_decr=0.5, epoch_waiting=10,
           never_stop=False):
     r"""Train the model with mini-batch Stochastic Gradient Descent(SGD).
@@ -51,6 +51,9 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
         The number of samples in each mini-batch. Default is 100.
     n_epochs : int, optional
         The number of training epochs. Default is 100.
+    valid_freq : None or int, optional
+        The number of iterations between validations. If None, then it will be
+        set to the size of training batch plus one. Default is None.
     patience_incr : float or double, optional
     lr_decr : float or double, optional
     epoch_waiting : float or double, optional
@@ -117,6 +120,9 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
     best_valid_error = np.inf
     test_error = np.inf
 
+    if valid_freq is None:
+        valid_freq = n_train_batches + 1
+
     patience = n_train_batches * 20
 
     last_improve_epoch = 0
@@ -125,59 +131,58 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
 
     begin_time = time.clock()
 
-    for epoch in xrange(n_epochs):
-        print "epoch {0}".format(epoch)
-
-        try:
-            # training
+    try:
+        for epoch in xrange(n_epochs):
             for j in xrange(n_train_batches):
+                # training
                 dataset.train.prepare([j * batch_size, (j + 1) * batch_size])
 
                 batch_cost = inc_updates_func(j, lr)
                 param_updates_func(0)
 
                 cur_iter = epoch * n_train_batches + j
-                print "[train] batch {0}/{1}, iter {2}, cost {3}".format(
-                    j + 1, n_train_batches, cur_iter, batch_cost)
+                print "[train] epoch {0} batch {1}/{2}, iter {3}, cost {4}".format(
+                    epoch, j + 1, n_train_batches, cur_iter, batch_cost)
 
-            # validation
-            valid_error = []
-            for j in xrange(n_valid_batches):
-                dataset.valid.prepare([j * batch_size, (j + 1) * batch_size])
-                valid_error.append(valid_func(j))
-            valid_error = np.mean(valid_error)
+                if (cur_iter + 1) % valid_freq == 0:
+                    # validation
+                    valid_error = []
+                    for j in xrange(n_valid_batches):
+                        dataset.valid.prepare([j * batch_size, (j + 1) * batch_size])
+                        valid_error.append(valid_func(j))
+                    valid_error = np.mean(valid_error)
 
-            print "[valid] error {0}".format(valid_error)
+                    print "[valid] error {0}".format(valid_error)
 
-            # testing
-            if valid_error < best_valid_error:
-                last_improve_epoch = epoch
-                patience = max(patience, cur_iter * patience_incr)
-                print "Update patience {0}".format(patience)
+                    # testing
+                    if valid_error < best_valid_error:
+                        last_improve_epoch = epoch
+                        patience = max(patience, cur_iter * patience_incr)
+                        print "Update patience {0}".format(patience)
 
-                best_valid_error = valid_error
+                        best_valid_error = valid_error
 
-                test_error = []
-                for j in xrange(n_test_batches):
-                    dataset.test.prepare(
-                        [j * batch_size, (j + 1) * batch_size])
-                    test_error.append(test_func(j))
-                test_error = np.mean(test_error)
+                        test_error = []
+                        for j in xrange(n_test_batches):
+                            dataset.test.prepare(
+                                [j * batch_size, (j + 1) * batch_size])
+                            test_error.append(test_func(j))
+                        test_error = np.mean(test_error)
 
-                print "[test] error {0}".format(test_error)
-            elif epoch >= last_improve_epoch + epoch_waiting:
-                # lr decreasing
-                lr *= lr_decr
-                last_improve_epoch = epoch
-                print "Update lr {0}".format(lr)
+                        print "[test] error {0}".format(test_error)
+                    elif epoch >= last_improve_epoch + epoch_waiting:
+                        # lr decreasing
+                        lr *= lr_decr
+                        last_improve_epoch = epoch
+                        print "Update lr {0}".format(lr)
 
             # early stopping
             if cur_iter > patience and not never_stop:
                 break
 
-        except KeyboardInterrupt:
-            print "Keyboard interrupt. Stop training"
-            break
+    except KeyboardInterrupt:
+        print "Keyboard interrupt. Stop training"
+        break
 
     print "Training complete, time {0}".format(time.clock() - begin_time)
     print "Best validation error {0}, test error {1}".format(best_valid_error,
