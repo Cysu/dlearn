@@ -349,3 +349,116 @@ class ConvPoolLayer(Block):
 
         """
         return self._W.norm(l)
+
+
+class RegMutlitaskLayer(Block):
+    def __init__(self, input, input_shape, output_shape,
+                 dropout_input=None, dropout_ratio=None, active_func=None,
+                 w0=None, b0=None W=None, b=None, const_params=False):
+        super(RegMutlitaskLayer, self).__init__(input, dropout_input)
+
+        if isinstance(input_shape, int):
+            self._input_shape = input_shape
+        elif isinstance(input_shape, tuple) or isinstance(input_shape, list):
+            self._input_shape = np.prod(input_shape)
+        else:
+            raise ValueError("input_shape type error")
+
+        if isinstance(output_shape, int):
+            self._output_shape = output_shape
+        elif isinstance(output_shape, tuple) or isinstance(output_shape, list):
+            self._output_shape = np.prod(output_shape)
+        else:
+            raise ValueError("output_shape type error")
+
+        self._active_func = active_func
+        self._dropout_ratio = dropout_ratio
+
+        # Initialize parameters
+        if w0 is None:
+            w0_bound = np.sqrt(6.0 / (self._input_shape + self._output_shape))
+
+            if active_func == actfuncs.sigmoid:
+                w0_bound *= 4
+
+            init_w0 = np.asarray(
+                nprng.uniform(low=-w0_bound, high=w0_bound,
+                              size=(self._input_shape, 1)))
+
+            self._w0 = theano.shared(value=init_w0, borrow=True)
+        else:
+            self._w0 = w0
+
+        if b0 is None:
+            init_b0 = np.zeros((1,), dtype=theano.config.floatX)
+
+            self._b0 = theano.shared(value=init_b0, borrow=True)
+        else:
+            self._b0 = b0
+
+        if W is None:
+            W_bound = np.sqrt(6.0 / (self._input_shape + self._output_shape))
+
+            if active_func == actfuncs.sigmoid:
+                W_bound *= 4
+
+            init_W = np.asarray(
+                nprng.uniform(low=-W_bound, high=W_bound,
+                              size=(self._input_shape, self._output_shape)),
+                dtype=theano.config.floatX)
+
+            self._W = theano.shared(value=init_W, borrow=True)
+        else:
+            self._W = W
+
+        if b is None:
+            init_b = np.zeros(self._output_shape, dtype=theano.config.floatX)
+
+            self._b = theano.shared(value=init_b, borrow=True)
+        else:
+            self._b = b
+
+        if not const_params:
+            self._params = [self._w0, self._b0, self._W, self._b]
+
+        # Compute output and dropout output
+        def f(x):
+            z0 = T.dot(x, self._w0) + self._b0
+            z = T.dot(x, self._W) + self._b
+            z = z + z0
+            return z if self._active_func is None else self._active_func(z)
+
+        self._output = f(self._input)
+        self._dropout_output = f(self._dropout_input)
+
+        if self._dropout_ratio is not None and self._dropout_ratio > 0:
+            self._output = (1.0 - self._dropout_ratio) * self._output
+            self._dropout_output = dropout(self._dropout_output,
+                                           self._dropout_ratio)
+
+    @property
+    def input_shape(self):
+        return self._input_shape
+
+    @property
+    def output_shape(self):
+        return self._output_shape
+
+    def get_norm(self, l):
+        """Return the norm of the weight matrix.
+
+        Parameters
+        ----------
+        l : int
+            The L?-norm.
+
+        Returns
+        -------
+        out : theano.tensor.scalar
+            The norm of the weight matrix.
+
+        """
+        return self._W.norm(l)
+
+    def get_regu(self):
+        return T.sum(self._w0 * self._W) + T.sum(self._b0 * self._b)
