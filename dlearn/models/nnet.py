@@ -119,4 +119,17 @@ class NeuralNet(Block):
             The summation of all the block norms.
 
         """
-        return sum([b.get_norm(l) for b in self._blocks])
+        ret = []
+        for b in self._blocks:
+            if 'get_norm' in dir(b) and callable(getattr(b, 'get_norm')):
+                ret.append(b.get_norm(l))
+        return sum(ret)
+
+    def get_squared_L2(self):
+        ret = []
+        for b in self._blocks:
+            if 'get_squared_L2' in dir(b) and \
+                    callable(getattr(b, 'get_squared_L2')):
+                ret.append(b.get_squared_L2())
+        return sum(ret)
+

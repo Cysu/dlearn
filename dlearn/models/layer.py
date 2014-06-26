@@ -155,6 +155,9 @@ class FullConnLayer(Block):
         """
         return self._W.norm(l)
 
+    def get_squared_L2(self):
+        return T.sum(self._W ** 2)
+
 
 class ConvPoolLayer(Block):
 
@@ -350,6 +353,9 @@ class ConvPoolLayer(Block):
         """
         return self._W.norm(l)
 
+    def get_squared_L2(self):
+        return T.sum(self._W ** 2)
+
 
 class RegMultitaskLayer(Block):
     def __init__(self, input, input_shape, output_shape,
@@ -445,21 +451,13 @@ class RegMultitaskLayer(Block):
     def output_shape(self):
         return self._output_shape
 
-    def get_norm(self, l):
-        """Return the norm of the weight matrix.
+    def get_squared_L2_W(self):
+        return T.sum(self._W ** 2)
 
-        Parameters
-        ----------
-        l : int
-            The L?-norm.
+    def get_squared_L2_w0(self):
+        return T.sum(self._w0 ** 2)
 
-        Returns
-        -------
-        out : theano.tensor.scalar
-            The norm of the weight matrix.
-
-        """
-        return self._W.norm(l)
-
-    def get_regu(self):
-        return T.sum(T.sum(self._w0.repeat(self._output_shape, axis=1) * self._W, axis=0) ** 2)
+    def get_regularization(self):
+        inner_product = self._w0.repeat(self._output_shape, axis=1) * self._W
+        inner_product = inner_product.sum(axis=0)
+        return T.sum(inner_product ** 2)
