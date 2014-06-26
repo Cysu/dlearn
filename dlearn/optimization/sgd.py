@@ -86,12 +86,10 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
     # Comupute updates
     grads = T.grad(model.cost, model.parameters,
                    consider_constant=model.consts)
-
     incs = [create_empty(p) for p in model.parameters]
 
     inc_updates = []
     param_updates = []
-
     for p, g, inc in zip(model.parameters, grads, incs):
         inc_updates.append((inc, momentum * inc - alpha * g))
         param_updates.append((p, p + inc))
@@ -107,69 +105,66 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
         on_unused_input='ignore')
 
     valid_func = theano.function(
-        inputs=[i], outputs=model.error,
+        inputs=[i], outputs=[model.cost, model.error],
         givens=_bind_data(model, dataset.valid, [l, r]),
         on_unused_input='ignore')
 
     test_func = theano.function(
-        inputs=[i], outputs=model.error,
+        inputs=[i], outputs=[model.cost, model.error],
         givens=_bind_data(model, dataset.test, [l, r]),
         on_unused_input='ignore')
 
     # Start training
     best_valid_error = np.inf
     test_error = np.inf
-
+    patience = n_train_batches * 20
+    last_improve_epoch = 0
     if valid_freq is None:
         valid_freq = n_train_batches + 1
 
-    patience = n_train_batches * 20
-
-    last_improve_epoch = 0
-
     print "Start training ..."
-
     begin_time = time.clock()
 
     try:
         for epoch in xrange(n_epochs):
             for j in xrange(n_train_batches):
+                cur_iter = epoch * n_train_batches + j
+
                 # training
                 dataset.train.prepare([j * batch_size, (j + 1) * batch_size])
-
                 batch_cost = inc_updates_func(j, lr)
                 param_updates_func(0)
-
-                cur_iter = epoch * n_train_batches + j
                 print "[train] epoch {0} batch {1}/{2}, iter {3}, cost {4}".format(
                     epoch, j + 1, n_train_batches, cur_iter, batch_cost)
 
                 if (cur_iter + 1) % valid_freq == 0:
                     # validation
-                    valid_error = []
+                    valid_cost, valid_error = [], []
                     for j in xrange(n_valid_batches):
                         dataset.valid.prepare([j * batch_size, (j + 1) * batch_size])
-                        valid_error.append(valid_func(j))
+                        cost, error = valid_func(j)
+                        valid_cost.append(cost)
+                        valid_error.append(error)
+                    valid_cost = np.mean(valid_cost)
                     valid_error = np.mean(valid_error)
-
-                    print "[valid] error {0}".format(valid_error)
+                    print "[valid] cost {0}, error {1}".format(valid_cost, valid_error)
 
                     # testing
                     if valid_error < best_valid_error:
+                        best_valid_error = valid_error
                         last_improve_epoch = epoch
                         patience = max(patience, cur_iter * patience_incr)
                         print "Update patience {0}".format(patience)
 
-                        best_valid_error = valid_error
-
-                        test_error = []
+                        test_cost, test_error = [], []
                         for j in xrange(n_test_batches):
-                            dataset.test.prepare(
-                                [j * batch_size, (j + 1) * batch_size])
-                            test_error.append(test_func(j))
+                            dataset.test.prepare([j * batch_size, (j + 1) * batch_size])
+                            cost, error = test_func(j)
+                            test_cost.append(cost)
+                            test_error.append(error)
+                        test_cost = np.mean(test_cost)
                         test_error = np.mean(test_error)
-
-                        print "[test] error {0}".format(test_error)
+                        print "[test] cost {0}, error {1}".format(test_cost, test_error)
                     elif epoch >= last_improve_epoch + epoch_waiting:
                         # lr decreasing
                         lr *= lr_decr
@@ -182,7 +177,6 @@ def train(model, dataset, lr=1e-4, momentum=0.9,
 
     except KeyboardInterrupt:
         print "Keyboard interrupt. Stop training"
-        break
 
     print "Training complete, time {0}".format(time.clock() - begin_time)
     print "Best validation error {0}, test error {1}".format(best_valid_error,
