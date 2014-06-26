@@ -29,14 +29,14 @@ def load_dataset():
     from scipy.io import loadmat
     from dlearn.data.dataset import Dataset
 
-    matdata = loadmat('..', 'data', 'human_sar', 'CUHK_SAR.mat')
+    matdata = loadmat(os.path.join('..', '..', 'data', 'human_sar', 'CUHK_SAR.mat'))
     m, n = matdata['images'].shape
     S = [choose_seg(matdata['segmentations'][i, 0], 'Upper')
          for i in xrange(m)]
     S = np.asarray(S)
 
     matdata = loadmat('XY_CUHK_SAR.mat')
-    X = matdata['X'].T
+    X = matdata['X'].T.astype('float32')
     X = X / 100.0
     X = X - X.mean(axis=0)
 
@@ -46,7 +46,7 @@ def load_dataset():
     return dataset
 
 
-def train_model(dataset, attr_model):
+def train_model(dataset):
     X = T.matrix()
     S = T.tensor3()
 
@@ -59,6 +59,17 @@ def train_model(dataset, attr_model):
         dropout_ratio=0.1,
         active_func=actfuncs.tanh
     ))
+
+    """
+    layers.append(FullConnLayer(
+        input=layers[-1].output,
+        input_shape=layers[-1].output_shape,
+        output_shape=1024,
+        dropout_ratio=0.1,
+        dropout_input=layers[-1].dropout_output,
+        active_func=actfuncs.tanh
+    ))
+    """
 
     layers.append(FullConnLayer(
         input=layers[-1].output,
@@ -85,7 +96,7 @@ def train_model(dataset, attr_model):
 
     sgd.train(model, dataset, lr=1e-2, momentum=0.9,
               batch_size=100, n_epochs=300,
-              epoch_waiting=10)
+              epoch_waiting=10, never_stop=True)
 
     return model
 

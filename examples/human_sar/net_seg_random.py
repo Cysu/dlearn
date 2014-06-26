@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import numpy as np
 import theano.tensor as T
 
 homepath = os.path.join('..', '..')
@@ -17,17 +18,20 @@ from dlearn.optimization import sgd
 
 # Program arguments parser
 desctxt = """
-Train attribute network with segmentation as ground truth. Use shape constrained
-pooling.
+Train segmentation network. Use filters learned from attribute network.
 """
 
 dataset_txt = """
 The input dataset data_name.pkl.
 """
 
+attr_txt = """
+The attribute network model_name.pkl.
+"""
+
 output_txt = """
-If not specified, the output model will be saved as model_attr.pkl.
-Otherwise it will be saved as model_attr_name.pkl.
+If not specified, the output model will be saved as model_seg.pkl.
+Otherwise it will be saved as model_seg_name.pkl.
 """
 
 parser = argparse.ArgumentParser(description=desctxt)
@@ -35,22 +39,12 @@ parser.add_argument('-d', '--dataset', nargs=1, required=True,
                     metavar='name', help=dataset_txt)
 parser.add_argument('-o', '--output', nargs='?', default=None,
                     metavar='name', help=output_txt)
-parser.add_argument('--no-scpool', action='store_true')
 
 args = parser.parse_args()
 
 
-def train_model(dataset, use_scpool):
-
-    def shape_constrained_pooling(fmaps):
-        beta = 100.0
-        s = fmaps.sum(axis=[2, 3])
-        # Z = abs(actfuncs.tanh(beta * fmaps)).sum(axis=[2, 3])
-        Z = T.neq(fmaps, 0).sum(axis=[2, 3])
-        return s / Z
-
+def train_model(dataset):
     X = T.tensor4()
-    A = T.matrix()
     S = T.tensor3()
 
     layers = []
@@ -60,8 +54,7 @@ def train_model(dataset, use_scpool):
         filter_shape=(32, 3, 5, 5),
         pool_shape=(2, 2),
         active_func=actfuncs.tanh,
-        flatten=False,
-        b=0.0
+        flatten=False
     ))
 
     layers.append(ConvPoolLayer(
@@ -70,30 +63,13 @@ def train_model(dataset, use_scpool):
         filter_shape=(64, 32, 5, 5),
         pool_shape=(2, 2),
         active_func=actfuncs.tanh,
-        flatten=False,
-        b=0.0
+        flatten=False
     ))
-
-    """
-    layers.append(ConvPoolLayer(
-        input=layers[-1].output,
-        input_shape=layers[-1].output_shape,
-        filter_shape=(128, 64, 3, 3),
-        pool_shape=(2, 2),
-        active_func=actfuncs.tanh,
-        flatten=False,
-        b=0.0
-    ))
-    """
-
-    F = layers[-1].output * S.dimshuffle(0, 'x', 1, 2)
-    F = shape_constrained_pooling(F) if use_scpool else \
-        F.flatten(2)
 
     layers.append(FullConnLayer(
-        input=F,
-        input_shape=layers[-1].output_shape[0],
-        output_shape=32,
+        input=layers[-1].output.flatten(2),
+        input_shape=np.prod(layers[-1].output_shape),
+        output_shape=1024,
         dropout_ratio=0.1,
         active_func=actfuncs.tanh
     ))
@@ -101,16 +77,25 @@ def train_model(dataset, use_scpool):
     layers.append(FullConnLayer(
         input=layers[-1].output,
         input_shape=layers[-1].output_shape,
-        output_shape=11,
+        output_shape=37 * 17,
         dropout_input=layers[-1].dropout_output,
         active_func=actfuncs.sigmoid
     ))
 
-    model = NeuralNet(layers, [X, S], layers[-1].output)
-    model.target = A
-    model.cost = costfuncs.binxent(layers[-1].dropout_output, A) + \
+    model = NeuralNet(layers, X, layers[-1].output)
+    model.target = S
+
+    '''
+    model.cost = costfuncs.binxent(layers[-1].dropout_output, S.flatten(2)) + \
         1e-3 * model.get_norm(2)
-    model.error = costfuncs.binerr(layers[-1].output, A)
+    model.error = costfuncs.binerr(layers[-1].output, S.flatten(2))
+    '''
+
+    model.cost = costfuncs.weighted_norm2(
+        layers[-1].dropout_output, S.flatten(2), 1.0) + \
+        1e-3 * model.get_norm(2)
+    model.error = costfuncs.weighted_norm2(
+        layers[-1].output, S.flatten(2), 1.0)
 
     sgd.train(model, dataset, lr=1e-2, momentum=0.9,
               batch_size=100, n_epochs=300,
@@ -121,11 +106,11 @@ def train_model(dataset, use_scpool):
 
 if __name__ == '__main__':
     dataset_file = 'data_{0}.pkl'.format(args.dataset[0])
-    out_file = 'model_attr.pkl' if args.output is None else \
-               'model_attr_{0}.pkl'.format(args.output)
+    out_file = 'model_seg.pkl' if args.output is None else \
+               'model_seg_{0}.pkl'.format(args.output)
 
     dataset = load_data(dataset_file)
 
-    model = train_model(dataset, not args.no_scpool)
+    model = train_model(dataset)
 
     save_data(model, out_file)

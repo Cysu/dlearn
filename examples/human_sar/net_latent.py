@@ -116,6 +116,7 @@ def train_model(dataset, attr_model, seg_model):
     S_dropout = S_dropout.dimshuffle(0, 'x', 1, 2)
 
     attr_layers = []
+    '''
     attr_layers.append(ConvPoolLayer(
         input=feature_layers[-1].output * S,
         input_shape=feature_layers[-1].output_shape,
@@ -127,17 +128,18 @@ def train_model(dataset, attr_model, seg_model):
         W=attr_model.blocks[2]._W,
         b=0.0
     ))
+    '''
 
     attr_layers.append(FullConnLayer(
-        input=shape_constrained_pooling(attr_layers[-1].output),
-        input_shape=attr_layers[-1].output_shape[0],
+        input=shape_constrained_pooling(feature_layers[-1].output * S),
+        input_shape=feature_layers[-1].output_shape,
         output_shape=64,
         dropout_input=shape_constrained_pooling(
-            attr_layers[-1].dropout_output),
+            feature_layers[-1].dropout_output * S_dropout),
         dropout_ratio=0.1,
         active_func=actfuncs.tanh,
-        W=attr_model.blocks[3]._W,
-        b=attr_model.blocks[3]._b
+        W=attr_model.blocks[2]._W,
+        b=attr_model.blocks[2]._b
     ))
 
     attr_layers.append(FullConnLayer(
@@ -146,8 +148,8 @@ def train_model(dataset, attr_model, seg_model):
         output_shape=11,
         dropout_input=attr_layers[-1].dropout_output,
         active_func=actfuncs.sigmoid,
-        W=attr_model.blocks[4]._W,
-        b=attr_model.blocks[4]._b
+        W=attr_model.blocks[3]._W,
+        b=attr_model.blocks[3]._b
     ))
 
     model = NeuralNet(feature_layers + seg_layers + attr_layers,

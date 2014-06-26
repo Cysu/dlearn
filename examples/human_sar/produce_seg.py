@@ -52,6 +52,7 @@ def load_rawdata(dnames):
 def proc_rawdata(rawdata):
     def imgresize(img):
         img = imgproc.resize(img, [160, 80], keep_ratio='height')
+        return img
 
     def imgprep(img):
         img = imgproc.subtract_luminance(img)
@@ -86,7 +87,7 @@ def save_segmentation(images, output, fpath):
 
 
 if __name__ == '__main__':
-    seg_file = 'model_{0}.pkl'.format(args.segmentation)
+    seg_file = 'model_{0}.pkl'.format(args.segmentation[0])
     out_file = '{0}.mat'.format(args.output[0])
 
     data = load_rawdata(args.dataset)

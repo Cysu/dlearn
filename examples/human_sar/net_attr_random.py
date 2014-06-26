@@ -35,23 +35,14 @@ parser.add_argument('-d', '--dataset', nargs=1, required=True,
                     metavar='name', help=dataset_txt)
 parser.add_argument('-o', '--output', nargs='?', default=None,
                     metavar='name', help=output_txt)
-parser.add_argument('--no-scpool', action='store_true')
 
 args = parser.parse_args()
 
 
-def train_model(dataset, use_scpool):
-
-    def shape_constrained_pooling(fmaps):
-        beta = 100.0
-        s = fmaps.sum(axis=[2, 3])
-        # Z = abs(actfuncs.tanh(beta * fmaps)).sum(axis=[2, 3])
-        Z = T.neq(fmaps, 0).sum(axis=[2, 3])
-        return s / Z
+def train_model(dataset):
 
     X = T.tensor4()
     A = T.matrix()
-    S = T.tensor3()
 
     layers = []
     layers.append(ConvPoolLayer(
@@ -61,7 +52,6 @@ def train_model(dataset, use_scpool):
         pool_shape=(2, 2),
         active_func=actfuncs.tanh,
         flatten=False,
-        b=0.0
     ))
 
     layers.append(ConvPoolLayer(
@@ -70,8 +60,7 @@ def train_model(dataset, use_scpool):
         filter_shape=(64, 32, 5, 5),
         pool_shape=(2, 2),
         active_func=actfuncs.tanh,
-        flatten=False,
-        b=0.0
+        flatten=True,
     ))
 
     """
@@ -86,13 +75,9 @@ def train_model(dataset, use_scpool):
     ))
     """
 
-    F = layers[-1].output * S.dimshuffle(0, 'x', 1, 2)
-    F = shape_constrained_pooling(F) if use_scpool else \
-        F.flatten(2)
-
     layers.append(FullConnLayer(
-        input=F,
-        input_shape=layers[-1].output_shape[0],
+        input=layers[-1].output,
+        input_shape=layers[-1].output_shape,
         output_shape=32,
         dropout_ratio=0.1,
         active_func=actfuncs.tanh
@@ -106,7 +91,7 @@ def train_model(dataset, use_scpool):
         active_func=actfuncs.sigmoid
     ))
 
-    model = NeuralNet(layers, [X, S], layers[-1].output)
+    model = NeuralNet(layers, X, layers[-1].output)
     model.target = A
     model.cost = costfuncs.binxent(layers[-1].dropout_output, A) + \
         1e-3 * model.get_norm(2)
@@ -126,6 +111,6 @@ if __name__ == '__main__':
 
     dataset = load_data(dataset_file)
 
-    model = train_model(dataset, not args.no_scpool)
+    model = train_model(dataset)
 
     save_data(model, out_file)

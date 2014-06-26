@@ -91,6 +91,8 @@ def create_dataset(rawdata):
         X[i] = imgprep(img)
         A[i] = choose_attr_mul(attr, 'Upper Body Colors')
         S[i] = choose_seg(seg, 'Upper')
+        # S[i] = (seg >= 0.5).astype(np.float32)
+        # S[i] = imgproc.resize(S[i], [37, 17]).astype(np.float32)
 
         # Mirror
         X[i + 1] = X[i][:, :, ::-1].copy()
@@ -102,11 +104,6 @@ def create_dataset(rawdata):
     X = np.asarray(X)
     A = np.asarray(A)
     S = np.asarray(S)
-
-    Xm = X.mean(axis=0)
-    import cPickle
-    with open('mean.pkl', 'wb') as f:
-        cPickle.dump(Xm, f, cPickle.HIGHEST_PROTOCOL)
 
     X = X - X.mean(axis=0)
 

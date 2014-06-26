@@ -43,6 +43,7 @@ args = parser.parse_args()
 
 
 def visualize(model, subset, folder, gt):
+    print folder
     if not os.path.isdir(folder):
         os.makedirs(folder)
 
@@ -78,4 +79,4 @@ if __name__ == '__main__':
 
     dataset = load_data(dataset_file)
     model = load_data(seg_file)
-    visualize(model, dataset.test, args.output, args.ground_truth)
+    visualize(model, dataset.test, args.output[0], args.ground_truth)
