@@ -351,11 +351,11 @@ class ConvPoolLayer(Block):
         return self._W.norm(l)
 
 
-class RegMutlitaskLayer(Block):
+class RegMultitaskLayer(Block):
     def __init__(self, input, input_shape, output_shape,
                  dropout_input=None, dropout_ratio=None, active_func=None,
-                 w0=None, b0=None W=None, b=None, const_params=False):
-        super(RegMutlitaskLayer, self).__init__(input, dropout_input)
+                 w0=None, b0=None, W=None, b=None, const_params=False):
+        super(RegMultitaskLayer, self).__init__(input, dropout_input)
 
         if isinstance(input_shape, int):
             self._input_shape = input_shape
@@ -383,14 +383,15 @@ class RegMutlitaskLayer(Block):
 
             init_w0 = np.asarray(
                 nprng.uniform(low=-w0_bound, high=w0_bound,
-                              size=(self._input_shape, 1)))
+                              size=(self._input_shape, 1)),
+                dtype=theano.config.floatX)
 
             self._w0 = theano.shared(value=init_w0, borrow=True)
         else:
             self._w0 = w0
 
         if b0 is None:
-            init_b0 = np.zeros((1,), dtype=theano.config.floatX)
+            init_b0 = np.asarray(0, theano.config.floatX)
 
             self._b0 = theano.shared(value=init_b0, borrow=True)
         else:
@@ -425,7 +426,7 @@ class RegMutlitaskLayer(Block):
         def f(x):
             z0 = T.dot(x, self._w0) + self._b0
             z = T.dot(x, self._W) + self._b
-            z = z + z0
+            z = z + z0.repeat(self._output_shape, axis=1)
             return z if self._active_func is None else self._active_func(z)
 
         self._output = f(self._input)
@@ -461,4 +462,4 @@ class RegMutlitaskLayer(Block):
         return self._W.norm(l)
 
     def get_regu(self):
-        return T.sum(self._w0 * self._W) + T.sum(self._b0 * self._b)
+        return T.sum(T.sum(self._w0.repeat(self._output_shape, axis=1) * self._W, axis=0) ** 2)
