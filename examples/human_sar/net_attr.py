@@ -42,11 +42,19 @@ args = parser.parse_args()
 
 def train_model(dataset, use_scpool):
 
+    """
     def shape_constrained_pooling(fmaps):
         beta = 100.0
         s = fmaps.sum(axis=[2, 3])
         # Z = abs(actfuncs.tanh(beta * fmaps)).sum(axis=[2, 3])
         Z = T.neq(fmaps, 0).sum(axis=[2, 3])
+        return s / Z
+    """
+    def shape_constrained_pooling(F, S):
+        masked_F = T.switch(T.eq(S, 1), F, 0)
+        #masked_F = F * S
+        s = masked_F.sum(axis=[2, 3])
+        Z = T.neq(masked_F, 0).sum(axis=[2, 3])
         return s / Z
 
     X = T.tensor4()
@@ -86,9 +94,13 @@ def train_model(dataset, use_scpool):
     ))
     """
 
+    """
     F = layers[-1].output * S.dimshuffle(0, 'x', 1, 2)
     F = shape_constrained_pooling(F) if use_scpool else \
         F.flatten(2)
+    """
+    F = layers[-1].output
+    F = shape_constrained_pooling(F, S.dimshuffle(0, 'x', 1, 2)) if use_scpool else F.flatten(2)
 
     layers.append(FullConnLayer(
         input=F,

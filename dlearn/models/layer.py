@@ -8,10 +8,10 @@ try:
     from pylearn2.sandbox.cuda_convnet.filter_acts import FilterActs
 except ImportError:
     use_convnet = False
-    print 'Using theano convolution'
+    print 'Use theano convolution'
 else:
     use_convnet = True
-    print 'Using cuda-convnet'
+    print 'Try cuda-convnet'
 
 from .block import Block
 from ..utils import actfuncs
@@ -228,7 +228,7 @@ class ConvPoolLayer(Block):
                  W=None, b=None, const_params=False):
         super(ConvPoolLayer, self).__init__(input, dropout_input)
 
-        if border_mode not in ['valid', 'full']:
+        if border_mode not in ['valid', 'full', 'same']:
             raise ValueError("border_mode value error")
 
         self._input_shape = input_shape
@@ -243,9 +243,12 @@ class ConvPoolLayer(Block):
         if self._border_mode == 'valid':
             n_rows = (self._input_shape[-2] - self._filter_shape[-2] + 1)
             n_cols = (self._input_shape[-1] - self._filter_shape[-1] + 1)
-        else:
+        elif self._border_mode == 'full':
             n_rows = (self._input_shape[-2] + self._filter_shape[-2] - 1)
             n_cols = (self._input_shape[-1] + self._filter_shape[-1] - 1)
+        else:
+            n_rows = self._input_shape[-2]
+            n_cols = self._input_shape[-1]
 
         self._output_shape = (
             self._filter_shape[0],
@@ -254,6 +257,17 @@ class ConvPoolLayer(Block):
         )
         if flatten:
             self._output_shape = np.prod(self._output_shape)
+
+        satisfy_convnet = use_convnet and \
+            self._filter_shape[0] % 16 == 0 and \
+            self._filter_shape[2] == self._filter_shape[3] and \
+            (self._input_shape[0] <= 4 or self._input_shape[0] % 4 == 0)
+
+        if use_convnet and not satisfy_convnet:
+            print "Break the convnet constraints. Fallback to theano conv."
+
+        if not satisfy_convnet and self._border_mode == 'same':
+            raise ValueError("Cannot use 'same' border mode when using theano conv")
 
         # Initialize parameters
         if W is None:
@@ -289,16 +303,19 @@ class ConvPoolLayer(Block):
 
         # Compute output and dropout output
         def f(x):
-            satisfy_convnet = use_convnet and \
-                self._filter_shape[0] % 16 == 0 and \
-                self._border_mode == 'valid'
-
             if not satisfy_convnet:
                 z = T.nnet.conv.conv2d(input=x, filters=self._W,
                                        filter_shape=self._filter_shape,
                                        border_mode=self._border_mode)
             else:
-                conv_op = FilterActs(stride=1, partial_sum=1)
+                if self._border_mode == 'valid':
+                    pad = 0
+                elif self._border_mode == 'same':
+                    pad = (self._filter_shape[2] - 1) // 2
+                else:
+                    pad = self._filter_shape[2] - 1
+
+                conv_op = FilterActs(stride=1, partial_sum=1, pad=pad)
                 x = gpu_contiguous(x.dimshuffle(1, 2, 3, 0))
                 W = gpu_contiguous(self._W.dimshuffle(1, 2, 3, 0))
                 z = conv_op(x, W).dimshuffle(3, 0, 1, 2)

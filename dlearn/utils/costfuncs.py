@@ -77,6 +77,15 @@ def neglog(output, target):
     return -T.mean(T.log(output)[T.arange(target.shape[0]), target])
 
 
+def neglog_2d(output, target):
+    i = T.arange(target.shape[0]).reshape((target.shape[0], 1))
+    i = T.repeat(i, target.shape[1], axis=1).flatten()
+    j = T.arange(target.shape[1]).reshape((1, target.shape[1]))
+    j = T.repeat(j, target.shape[0], axis=0).flatten()
+    k = target.flatten()
+    return -T.mean(T.log(output)[i, j, k])
+
+
 def miscls_rate(output, target):
     r"""Return the mean misclassification rate.
 
@@ -94,6 +103,11 @@ def miscls_rate(output, target):
 
     """
     pred = T.argmax(output, axis=1)
+    return T.neq(pred, target).mean()
+
+
+def miscls_rate_2d(output, target):
+    pred = T.argmax(output, axis=2)
     return T.neq(pred, target).mean()
 
 
@@ -160,3 +174,4 @@ def weighted_norm2(output, target, weight):
     x = (output - target) ** 2
     w = (target + weight)
     return (w * x).sum(axis=1).mean()
+
